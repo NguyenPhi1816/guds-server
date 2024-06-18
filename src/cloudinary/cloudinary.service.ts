@@ -1,5 +1,3 @@
-// cloudinary.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryResponse } from './cloudinary-response';
@@ -25,5 +23,23 @@ export class CloudinaryService {
           .pipe(uploadStream);
       },
     );
+  }
+
+  async uploadImages(
+    files: Express.Multer.File[],
+  ) {
+    const uploadPromises = files.map((file) =>
+      this.uploadFile(file),
+    );
+
+    const result = await Promise.all(
+      uploadPromises,
+    );
+
+    const paths = result.map(
+      (item) => item.secure_url,
+    );
+
+    return { paths };
   }
 }

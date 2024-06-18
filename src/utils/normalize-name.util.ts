@@ -47,9 +47,8 @@ export function normalizeName(
   const nonAccentName = toNonAccentVietnamese(
     nameLowerCase,
   );
-  const normalized = nonAccentName.replace(
-    ' ',
-    '-',
-  );
+  const normalized = nonAccentName
+    .split(' ')
+    .join('-');
   return normalized;
 }

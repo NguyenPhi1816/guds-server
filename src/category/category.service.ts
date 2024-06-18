@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AddCategoryDto } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
@@ -16,17 +20,28 @@ export class CategoryService {
   async addCategory(
     addCategoryDto: AddCategoryDto,
   ) {
-    const category =
-      await this.prisma.category.create({
-        data: {
-          Name: addCategoryDto.name,
-          Image: addCategoryDto.image,
-          Slug: normalizeName(
-            addCategoryDto.name,
-          ),
-          Description: addCategoryDto.description,
-        },
-      });
-    return category;
+    try {
+      const category =
+        await this.prisma.category.create({
+          data: {
+            Name: addCategoryDto.name,
+            Image: addCategoryDto.image,
+            Slug: normalizeName(
+              addCategoryDto.name,
+            ),
+            Description:
+              addCategoryDto.description,
+          },
+        });
+      return category;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException(
+          'Category name must be unique',
+        );
+      } else {
+        throw new BadRequestException(error);
+      }
+    }
   }
 }

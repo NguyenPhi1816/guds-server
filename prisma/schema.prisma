@@ -46,9 +46,78 @@ model User {
 }
 
 model Category {
-  Id          Int      @id @default(autoincrement())
-  Slug        String   @unique
-  Name        String
-  Image       String?
-  Description String?
+  Id          Int    @id @default(autoincrement())
+  Slug        String @unique
+  Name        String @unique
+  Image       String
+  Description String
+
+  baseProducts BaseProduct[]
+}
+
+model BaseProduct {
+  Id          Int    @id @default(autoincrement())
+  Slug        String @unique
+  Name        String @unique
+  Description String
+  CategoryId  Int
+  Status      String
+
+  category Category           @relation(fields: [CategoryId], references: [Id])
+  images   BaseProductImage[]
+}
+
+model BaseProductImage {
+  Id            Int     @id @default(autoincrement())
+  BaseProductId Int
+  Path          String
+  IsDefault     Boolean
+
+  baseProduct BaseProduct @relation(fields: [BaseProductId], references: [Id])
+}
+
+model Option {
+  Id   Int    @id @default(autoincrement())
+  Name String @unique
+
+  optionValues OptionValue[]
+}
+
+model OptionValue {
+  Id       Int    @id @default(autoincrement())
+  OptionId Int
+  Value    String
+
+  option              Option               @relation(fields: [OptionId], references: [Id])
+  optionValueVariants OptionValueVariant[]
+}
+
+model OptionValueVariant {
+  OptionValueId    Int
+  ProductVariantId Int
+
+  optionValue    OptionValue    @relation(fields: [OptionValueId], references: [Id])
+  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+
+  @@id([OptionValueId, ProductVariantId])
+}
+
+model ProductVariant {
+  Id            Int    @id @default(autoincrement())
+  Quantity      Int
+  Image         String
+  BaseProductId Int
+
+  optionValueVariants OptionValueVariant[]
+  prices              Price[]
+}
+
+model Price {
+  ProductVariantId Int
+  Price            Int
+  UpdatedAt        DateTime
+
+  ProductVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+
+  @@id([ProductVariantId, Price, UpdatedAt])
 }

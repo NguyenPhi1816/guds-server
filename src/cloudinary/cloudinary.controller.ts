@@ -1,11 +1,11 @@
 import {
   Controller,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { CloudinaryService } from './cloudinary.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('api/images')
 export class CloudinaryController {
@@ -14,12 +14,12 @@ export class CloudinaryController {
   ) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadImage(
-    @UploadedFile() file: Express.Multer.File,
+  @UseInterceptors(FilesInterceptor('file'))
+  async uploadImage(
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.cloudinaryService.uploadFile(
-      file,
+    return this.cloudinaryService.uploadImages(
+      files,
     );
   }
 }
