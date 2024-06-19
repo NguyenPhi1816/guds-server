@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Payment" ALTER COLUMN "PaymentDate" DROP NOT NULL,
+ALTER COLUMN "PaymentDate" DROP DEFAULT;

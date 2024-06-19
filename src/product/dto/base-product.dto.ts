@@ -1,6 +1,8 @@
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -10,25 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class AddBaseProductDto {
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  categoryId: number;
-
-  @IsArray()
-  @IsString({ each: true })
-  @IsNotEmpty()
-  images: string[];
-}
+import { ProductVariantResponseDto } from 'src/category/dto/response.dto';
 
 export class CreateProductOptionValueDto {
   @IsString()
@@ -97,4 +81,100 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
   variants: CreateProductVariantDto[];
+}
+
+export class OptionValuesResponseDto {
+  @IsString()
+  option: String;
+
+  @IsArray()
+  @IsString({ each: true })
+  values: String[];
+}
+
+export class OptionValueResponseDto {
+  @IsString()
+  option: String;
+
+  @IsString()
+  value: String;
+}
+
+export class ImageResponseDto {
+  @IsInt()
+  Id: number;
+
+  @IsUrl()
+  Path: string;
+
+  @IsBoolean()
+  IsDefault: boolean;
+}
+
+export class ProductVariantDto {
+  @IsInt()
+  id: number;
+
+  @IsUrl()
+  image: string;
+
+  @IsInt()
+  quantity: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OptionValueResponseDto)
+  optionValue: OptionValueResponseDto[];
+
+  @IsInt()
+  price: number;
+}
+
+export class BaseProductResponseDto {
+  @IsInt()
+  id: number;
+
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+
+  @IsString()
+  description: string;
+
+  @IsInt()
+  categoryId: number;
+
+  @IsString()
+  status: String;
+
+  @IsInt()
+  averageRating: number;
+
+  @IsInt()
+  numberOfFeedbacks: number;
+
+  @IsInt()
+  numberOfPurchases: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ImageResponseDto)
+  images: ImageResponseDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OptionValuesResponseDto)
+  optionValues: OptionValuesResponseDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantResponseDto)
+  relatedProducts: ProductVariantResponseDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  productVariants: ProductVariantDto[];
 }

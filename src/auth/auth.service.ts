@@ -6,10 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthDTO, SignUpDto } from './dto';
 import * as argon from 'argon2';
-import {
-  AccountStatus,
-  UserRoles,
-} from 'src/constants/enum';
+import { AccountStatus, UserRoles } from 'src/constants/enum';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -25,31 +22,23 @@ export class AuthService {
   ) {}
   async signIn(authDto: AuthDTO) {
     // find account by phone number
-    const account =
-      await this.prisma.account.findUnique({
-        where: {
-          UserPhoneNumber: authDto.phoneNumber,
-        },
-      });
+    const account = await this.prisma.account.findUnique({
+      where: {
+        UserPhoneNumber: authDto.phoneNumber,
+      },
+    });
 
     // throw exception if account not found
     if (!account) {
-      throw new UnauthorizedException(
-        'Phone number not found.',
-      );
+      throw new UnauthorizedException('Phone number not found.');
     }
 
     // compare password
-    const pwMatches = await argon.verify(
-      account.Password,
-      authDto.password,
-    );
+    const pwMatches = await argon.verify(account.Password, authDto.password);
 
     // throw exception if password incorrect
     if (!pwMatches) {
-      throw new UnauthorizedException(
-        'Password incorrect.',
-      );
+      throw new UnauthorizedException('Password incorrect.');
     }
 
     return this.signTokens(
@@ -61,26 +50,21 @@ export class AuthService {
 
   async signUp(signUpDto: SignUpDto) {
     // generate the hashed password
-    const hashedPassword = await argon.hash(
-      signUpDto.password,
-    );
+    const hashedPassword = await argon.hash(signUpDto.password);
 
     // get user role with role name equal user
-    const userRole =
-      await this.prisma.userRole.findFirst({
-        where: { Name: UserRoles.USER },
-      });
+    const userRole = await this.prisma.userRole.findFirst({
+      where: { Name: UserRoles.USER },
+    });
 
     try {
       // save user
-      await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           FirstName: signUpDto.firstName,
           LastName: signUpDto.lastName,
           Address: signUpDto.address,
-          DateOfBirth: new Date(
-            signUpDto.dateOfBirth,
-          ),
+          DateOfBirth: new Date(signUpDto.dateOfBirth),
           Email: signUpDto.email,
           PhoneNumber: signUpDto.phoneNumber,
           Gender: signUpDto.gender,
@@ -88,16 +72,20 @@ export class AuthService {
       });
 
       // save account
-      const account =
-        await this.prisma.account.create({
-          data: {
-            UserPhoneNumber:
-              signUpDto.phoneNumber,
-            Password: hashedPassword,
-            Status: AccountStatus.ACTIVE,
-            UserRoleId: userRole.Id,
-          },
-        });
+      const account = await this.prisma.account.create({
+        data: {
+          UserPhoneNumber: signUpDto.phoneNumber,
+          Password: hashedPassword,
+          Status: AccountStatus.ACTIVE,
+          UserRoleId: userRole.Id,
+        },
+      });
+
+      await this.prisma.cart.create({
+        data: {
+          UserId: user.Id,
+        },
+      });
 
       return this.signTokens(
         account.Id,
@@ -105,26 +93,22 @@ export class AuthService {
         account.UserRoleId,
       );
     } catch (error) {
-      if (
-        error instanceof
-        PrismaClientKnownRequestError
-      ) {
+      if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ConflictException(
-            'Phone number or email already exists.',
-          );
+          throw new ConflictException('Phone number or email already exists.');
         }
+      } else {
+        throw error;
       }
     }
   }
 
   async refreshToken(userPhoneNumber: string) {
-    const account =
-      await this.prisma.account.findUnique({
-        where: {
-          UserPhoneNumber: userPhoneNumber,
-        },
-      });
+    const account = await this.prisma.account.findUnique({
+      where: {
+        UserPhoneNumber: userPhoneNumber,
+      },
+    });
     return this.signTokens(
       account.Id,
       account.UserPhoneNumber,
@@ -132,36 +116,22 @@ export class AuthService {
     );
   }
 
-  async signTokens(
-    accountId: number,
-    phoneNumber: string,
-    userRoleId: number,
-  ) {
+  async signTokens(accountId: number, phoneNumber: string, userRoleId: number) {
     const payload = {
       sub: accountId,
       phoneNumber,
       userRoleId,
     };
-    const accessSecret = this.config.get(
-      'JWT_ACCESS_SECRET',
-    );
-    const refreshSecret = this.config.get(
-      'JWT_REFRESH_SECRET',
-    );
-    const accessToken = await this.jwt.signAsync(
-      payload,
-      {
-        expiresIn: '15m',
-        secret: accessSecret,
-      },
-    );
-    const refreshToken = await this.jwt.signAsync(
-      payload,
-      {
-        expiresIn: '1d',
-        secret: refreshSecret,
-      },
-    );
+    const accessSecret = this.config.get('JWT_ACCESS_SECRET');
+    const refreshSecret = this.config.get('JWT_REFRESH_SECRET');
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: '15m',
+      secret: accessSecret,
+    });
+    const refreshToken = await this.jwt.signAsync(payload, {
+      expiresIn: '1d',
+      secret: refreshSecret,
+    });
     return {
       access_token: accessToken,
       refresh_token: refreshToken,

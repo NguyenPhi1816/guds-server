@@ -42,7 +42,10 @@ model User {
   Avatar      String?
   Email       String   @unique
 
-  account Account?
+  account   Account?
+  feedbacks Feedback[]
+  orders    Order[]
+  cart      Cart?
 }
 
 model Category {
@@ -63,8 +66,9 @@ model BaseProduct {
   CategoryId  Int
   Status      String
 
-  category Category           @relation(fields: [CategoryId], references: [Id])
-  images   BaseProductImage[]
+  category        Category           @relation(fields: [CategoryId], references: [Id])
+  images          BaseProductImage[]
+  productVariants ProductVariant[]
 }
 
 model BaseProductImage {
@@ -110,6 +114,10 @@ model ProductVariant {
 
   optionValueVariants OptionValueVariant[]
   prices              Price[]
+  baseProduct         BaseProduct          @relation(fields: [BaseProductId], references: [Id])
+  feedbacks           Feedback[]
+  orderDetails        OrderDetail[]
+  cartDetails         CartDetail[]
 }
 
 model Price {
@@ -120,4 +128,71 @@ model Price {
   ProductVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
 
   @@id([ProductVariantId, Price, UpdatedAt])
+}
+
+model Order {
+  Id       Int      @id @default(autoincrement())
+  UserId   Int
+  Note     String?
+  CreateAt DateTime @default(now())
+  Status   String
+
+  user         User          @relation(fields: [UserId], references: [Id])
+  orderDetails OrderDetail[]
+  payment      Payment?
+}
+
+model OrderDetail {
+  Id               Int @id @default(autoincrement())
+  ProductVariantId Int
+  OrderId          Int
+  Quantity         Int
+
+  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+  order          Order          @relation(fields: [OrderId], references: [Id])
+  feedback       Feedback?
+}
+
+model Payment {
+  Id            Int       @id @default(autoincrement())
+  OrderId       Int       @unique
+  PaymentMethod String
+  Amount        Float
+  PaymentDate   DateTime?
+  Status        String
+  TransactionId String?
+
+  order Order @relation(fields: [OrderId], references: [Id])
+}
+
+model Feedback {
+  Id               Int      @id @default(autoincrement())
+  UserId           Int
+  ProductVariantId Int
+  CreatedAt        DateTime @default(now())
+  Comment          String?
+  Rating           Int
+  OrderDetailId    Int      @unique
+
+  user           User           @relation(fields: [UserId], references: [Id])
+  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+  orderDetail    OrderDetail    @relation(fields: [OrderDetailId], references: [Id])
+}
+
+model Cart {
+  Id     Int @id @default(autoincrement())
+  UserId Int @unique
+
+  user        User         @relation(fields: [UserId], references: [Id])
+  cartDetails CartDetail[]
+}
+
+model CartDetail {
+  Id               Int @id @default(autoincrement())
+  CartId           Int
+  ProductVariantId Int
+  Quantity         Int
+
+  cart           Cart           @relation(fields: [CartId], references: [Id])
+  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
 }

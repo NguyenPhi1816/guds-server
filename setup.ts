@@ -1,6 +1,4 @@
-const {
-  PrismaClient,
-} = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 
 const argon = require('argon2');
 
@@ -32,16 +30,21 @@ async function setup() {
     },
   });
 
-  const hashedPass =
-    await argon.hash('123456789');
+  const hashedPass = await argon.hash('123456789');
 
   // save account
-  await prisma.account.create({
+  const user = await prisma.account.create({
     data: {
       UserPhoneNumber: '0999999999',
       Password: hashedPass,
       Status: 'ACTIVE',
       UserRoleId: admin.Id,
+    },
+  });
+
+  await prisma.cart.create({
+    data: {
+      UserId: user.Id,
     },
   });
 }

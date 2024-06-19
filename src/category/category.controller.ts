@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -33,5 +34,10 @@ export class CategoryController {
     return this.categoryService.addCategory(
       addCategoryDto,
     );
+  }
+
+  @Get('/:slug')
+  getBySlug(@Param('slug') slug: string) {
+    return this.categoryService.getBySlug(slug);
   }
 }
