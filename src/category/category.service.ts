@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AddCategoryDto } from './dto';
+import { AddCategoryDto, UpdateCategoryDto } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import {
   CategoryResponseDto,
@@ -29,6 +29,29 @@ export class CategoryService {
           Image: addCategoryDto.image,
           Slug: normalizeName(addCategoryDto.name),
           Description: addCategoryDto.description,
+        },
+      });
+      return category;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Category name must be unique');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async updateCategory(updateCategoryDto: UpdateCategoryDto) {
+    try {
+      console.log(updateCategoryDto);
+
+      const category = await this.prisma.category.update({
+        where: { Id: updateCategoryDto.id },
+        data: {
+          Name: updateCategoryDto.name,
+          Slug: normalizeName(updateCategoryDto.name),
+          Image: updateCategoryDto.image,
+          Description: updateCategoryDto.description,
         },
       });
       return category;

@@ -26,4 +26,9 @@ export class ProductController {
   getBySlug(@Param('slug') slug: string) {
     return this.productService.getBySlug(slug);
   }
+
+  @Get('/category/:slug')
+  getBaseProductsByCategorySlug(@Param('slug') slug: string) {
+    return this.productService.getBaseProductsByCategorySlug(slug);
+  }
 }

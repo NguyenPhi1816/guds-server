@@ -28,8 +28,31 @@ export class ProductService {
 
   async getAllBaseProduct() {
     try {
-      const baseProducts = await this.prisma.baseProduct.findMany();
-      return baseProducts;
+      const baseProducts = await this.prisma.baseProduct.findMany({
+        include: {
+          category: {
+            select: {
+              Name: true,
+            },
+          },
+          images: {
+            where: { IsDefault: true },
+            select: {
+              Path: true,
+            },
+          },
+        },
+      });
+      const responses = baseProducts.map((item) => ({
+        Id: item.Id,
+        Slug: item.Slug,
+        Name: item.Name,
+        Description: item.Description,
+        CategoryId: item.category.Name,
+        Status: item.Status,
+        image: item.images[0].Path,
+      }));
+      return responses;
     } catch (error) {
       throw error;
     }
@@ -428,5 +451,38 @@ export class ProductService {
           break;
       }
     } catch (error) {}
+  }
+
+  async getBaseProductsByCategorySlug(slug: string) {
+    try {
+      const baseProducts = await this.prisma.baseProduct.findMany({
+        where: slug === '_' ? {} : { category: { Slug: slug } },
+        include: {
+          category: {
+            select: {
+              Name: true,
+            },
+          },
+          images: {
+            where: { IsDefault: true },
+            select: {
+              Path: true,
+            },
+          },
+        },
+      });
+      const responses = baseProducts.map((item) => ({
+        Id: item.Id,
+        Slug: item.Slug,
+        Name: item.Name,
+        Description: item.Description,
+        CategoryId: item.category.Name,
+        Status: item.Status,
+        image: item.images[0].Path,
+      }));
+      return responses;
+    } catch (error) {
+      throw error;
+    }
   }
 }
