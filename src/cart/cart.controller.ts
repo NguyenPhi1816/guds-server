@@ -17,33 +17,33 @@ import { AddToCartDto } from './dto';
 export class CartController {
   constructor(private cartService: CartService) {}
 
-  @Get()
-  @UseGuards(JwtGuard)
-  getCartByUserId(@GetUser('Id') userId: number) {
-    return this.cartService.getCartByUserId(userId);
-  }
+  // @Get()
+  // @UseGuards(JwtGuard)
+  // getCartByUserId(@GetUser('Id') userId: number) {
+  //   return this.cartService.getCartByUserId(userId);
+  // }
 
-  @Post()
-  @UseGuards(JwtGuard)
-  addProductToCart(
-    @GetUser('Id') userId: number,
-    @Body() addToCartDto: AddToCartDto,
-  ) {
-    return this.cartService.addProductToCart(userId, addToCartDto);
-  }
+  // @Post()
+  // @UseGuards(JwtGuard)
+  // addProductToCart(
+  //   @GetUser('Id') userId: number,
+  //   @Body() addToCartDto: AddToCartDto,
+  // ) {
+  //   return this.cartService.addProductToCart(userId, addToCartDto);
+  // }
 
-  @Patch('/:cartDetailId/:type')
-  @UseGuards(JwtGuard)
-  updateCartDetailQuantity(
-    @Param('cartDetailId') cartDetailId: string,
-    @Param('type') type: string,
-  ) {
-    return this.cartService.updateCartDetailQuantity(cartDetailId, type);
-  }
+  // @Patch('/:cartDetailId/:type')
+  // @UseGuards(JwtGuard)
+  // updateCartDetailQuantity(
+  //   @Param('cartDetailId') cartDetailId: string,
+  //   @Param('type') type: string,
+  // ) {
+  //   return this.cartService.updateCartDetailQuantity(cartDetailId, type);
+  // }
 
-  @Delete('/:cartDetailId')
-  @UseGuards(JwtGuard)
-  deleteCartDetail(@Param('cartDetailId') cartDetailId: string) {
-    return this.cartService.deleteCartDetail(cartDetailId);
-  }
+  // @Delete('/:cartDetailId')
+  // @UseGuards(JwtGuard)
+  // deleteCartDetail(@Param('cartDetailId') cartDetailId: string) {
+  //   return this.cartService.deleteCartDetail(cartDetailId);
+  // }
 }

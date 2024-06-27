@@ -14,185 +14,206 @@ datasource db {
 }
 
 model Account {
-  Id              Int    @id @default(autoincrement())
-  UserPhoneNumber String @unique
-  Password        String
-  UserRoleId      Int
-  Status          String
+  id              Int    @id @default(autoincrement())
+  userPhoneNumber String @unique
+  password        String
+  roleId          Int
+  status          String
 
-  userRole UserRole @relation(fields: [UserRoleId], references: [Id])
-  user     User     @relation(fields: [UserPhoneNumber], references: [PhoneNumber])
+  userRole Role @relation(fields: [roleId], references: [id])
+  user     User @relation(fields: [userPhoneNumber], references: [phoneNumber])
 }
 
-model UserRole {
-  Id   Int    @id @default(autoincrement())
-  Name String
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String
 
   accounts Account[]
 }
 
 model User {
-  Id          Int      @id @default(autoincrement())
-  FirstName   String
-  LastName    String
-  Address     String
-  PhoneNumber String   @unique
-  Gender      String
-  DateOfBirth DateTime
-  Avatar      String?
-  Email       String   @unique
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  address     String
+  phoneNumber String   @unique
+  gender      String
+  dateOfBirth DateTime
+  image       String?
+  email       String   @unique
 
-  account   Account?
-  feedbacks Feedback[]
-  orders    Order[]
-  cart      Cart?
+  account Account?
+  reviews Review[]
+  orders  Order[]
+  carts   Cart[]
 }
 
 model Category {
-  Id          Int    @id @default(autoincrement())
-  Slug        String @unique
-  Name        String @unique
-  Image       String
-  Description String
+  id          Int    @id @default(autoincrement())
+  slug        String @unique
+  name        String @unique
+  image       String
+  description String
+  parentId    Int?
 
-  baseProducts BaseProduct[]
+  baseProductCategories BaseProductCategory[]
+  parent      Category? @relation("CategoryParent", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryParent")
 }
 
 model BaseProduct {
-  Id          Int    @id @default(autoincrement())
-  Slug        String @unique
-  Name        String @unique
-  Description String
-  CategoryId  Int
-  Status      String
+  id          Int    @id @default(autoincrement())
+  slug        String @unique
+  name        String @unique
+  description String
+  status      String
+  brandId     Int
 
-  category        Category           @relation(fields: [CategoryId], references: [Id])
-  images          BaseProductImage[]
-  productVariants ProductVariant[]
+  brand                 Brand                 @relation(fields: [brandId], references: [id])
+  images                BaseProductImage[]
+  baseProductCategories BaseProductCategory[]
+  options               Option[]
+  productVariants       ProductVariant[]
 }
 
 model BaseProductImage {
-  Id            Int     @id @default(autoincrement())
-  BaseProductId Int
-  Path          String
-  IsDefault     Boolean
+  id            Int     @id @default(autoincrement())
+  path          String
+  isDefault     Boolean
+  baseProductId Int
 
-  baseProduct BaseProduct @relation(fields: [BaseProductId], references: [Id])
+  baseProduct BaseProduct @relation(fields: [baseProductId], references: [id])
 }
 
 model Option {
-  Id   Int    @id @default(autoincrement())
-  Name String @unique
+  id            Int    @id @default(autoincrement())
+  name          String
+  baseProductId Int
 
+  baseProduct  BaseProduct   @relation(fields: [baseProductId], references: [id])
   optionValues OptionValue[]
 }
 
 model OptionValue {
-  Id       Int    @id @default(autoincrement())
-  OptionId Int
-  Value    String
+  id       Int    @id @default(autoincrement())
+  value    String
+  optionId Int
 
-  option              Option               @relation(fields: [OptionId], references: [Id])
+  option              Option               @relation(fields: [optionId], references: [id])
   optionValueVariants OptionValueVariant[]
 }
 
 model OptionValueVariant {
-  OptionValueId    Int
-  ProductVariantId Int
+  optionValueId    Int
+  productVariantId Int
 
-  optionValue    OptionValue    @relation(fields: [OptionValueId], references: [Id])
-  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+  optionValue    OptionValue    @relation(fields: [optionValueId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 
-  @@id([OptionValueId, ProductVariantId])
+  @@id([optionValueId, productVariantId])
 }
 
 model ProductVariant {
-  Id            Int    @id @default(autoincrement())
-  Quantity      Int
-  Image         String
-  BaseProductId Int
+  id            Int    @id @default(autoincrement())
+  quantity      Int
+  image         String
+  baseProductId Int
 
   optionValueVariants OptionValueVariant[]
   prices              Price[]
-  baseProduct         BaseProduct          @relation(fields: [BaseProductId], references: [Id])
-  feedbacks           Feedback[]
+  baseProduct         BaseProduct          @relation(fields: [baseProductId], references: [id])
   orderDetails        OrderDetail[]
-  cartDetails         CartDetail[]
+  carts               Cart[]
 }
 
 model Price {
-  ProductVariantId Int
-  Price            Int
-  UpdatedAt        DateTime
+  price            Float
+  updatedAt        DateTime
+  productVariantId Int
 
-  ProductVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+  ProductVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 
-  @@id([ProductVariantId, Price, UpdatedAt])
+  @@id([productVariantId, price, updatedAt])
 }
 
 model Order {
-  Id       Int      @id @default(autoincrement())
-  UserId   Int
-  Note     String?
-  CreateAt DateTime @default(now())
-  Status   String
+  id                  Int      @id @default(autoincrement())
+  userId              Int
+  receiverName        String
+  receiverPhoneNumber String
+  receiverAddress     String
+  note                String?
+  createAt            DateTime @default(now())
+  status              String
 
-  user         User          @relation(fields: [UserId], references: [Id])
+  user         User          @relation(fields: [userId], references: [id])
   orderDetails OrderDetail[]
   payment      Payment?
 }
 
 model OrderDetail {
-  Id               Int @id @default(autoincrement())
-  ProductVariantId Int
-  OrderId          Int
-  Quantity         Int
+  id               Int @id @default(autoincrement())
+  orderId          Int
+  productVariantId Int
+  quantity         Int
 
-  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
-  order          Order          @relation(fields: [OrderId], references: [Id])
-  feedback       Feedback?
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+  order          Order          @relation(fields: [orderId], references: [id])
+  review         Review?
 }
 
 model Payment {
-  Id            Int       @id @default(autoincrement())
-  OrderId       Int       @unique
-  PaymentMethod String
-  Amount        Float
-  PaymentDate   DateTime?
-  Status        String
-  TransactionId String?
+  id            Int       @id @default(autoincrement())
+  orderId       Int       @unique
+  paymentMethod String
+  paymentDate   DateTime?
+  totalPrice    Float
+  status        String
+  transactionId String?
 
-  order Order @relation(fields: [OrderId], references: [Id])
+  order Order @relation(fields: [orderId], references: [id])
 }
 
-model Feedback {
-  Id               Int      @id @default(autoincrement())
-  UserId           Int
-  ProductVariantId Int
-  CreatedAt        DateTime @default(now())
-  Comment          String?
-  Rating           Int
-  OrderDetailId    Int      @unique
+model Review {
+  id            Int      @id @default(autoincrement())
+  comment       String?
+  rating        Int
+  createdAt     DateTime @default(now())
+  updateAt      DateTime
+  userId        Int
+  orderDetailId Int      @unique
 
-  user           User           @relation(fields: [UserId], references: [Id])
-  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
-  orderDetail    OrderDetail    @relation(fields: [OrderDetailId], references: [Id])
+  user        User        @relation(fields: [userId], references: [id])
+  orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id])
 }
 
 model Cart {
-  Id     Int @id @default(autoincrement())
-  UserId Int @unique
+  userId           Int
+  productVariantId Int
+  quantity         Int
+  create_at        DateTime
 
-  user        User         @relation(fields: [UserId], references: [Id])
-  cartDetails CartDetail[]
+  user           User           @relation(fields: [userId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@id([userId, productVariantId])
 }
 
-model CartDetail {
-  Id               Int @id @default(autoincrement())
-  CartId           Int
-  ProductVariantId Int
-  Quantity         Int
+model Brand {
+  id    Int    @id @default(autoincrement())
+  slug  String @unique
+  name  String @unique
+  image String
 
-  cart           Cart           @relation(fields: [CartId], references: [Id])
-  productVariant ProductVariant @relation(fields: [ProductVariantId], references: [Id])
+  baseProducts BaseProduct[]
+}
+
+model BaseProductCategory {
+  categoryId    Int
+  baseProductId Int
+
+  category    Category    @relation(fields: [categoryId], references: [id])
+  baseProduct BaseProduct @relation(fields: [baseProductId], references: [id])
+
+  @@id([categoryId, baseProductId])
 }

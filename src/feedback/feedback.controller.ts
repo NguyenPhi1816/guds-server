@@ -8,17 +8,17 @@ import { FeedbackService } from './feedback.service';
 export class FeedbackController {
   constructor(private feedbackService: FeedbackService) {}
 
-  @Get('/:slug')
-  getFeedbackByBaseProductSlug(@Param('slug') slug: string) {
-    return this.feedbackService.getFeedbackByProductSlug(slug);
-  }
+  // @Get('/:slug')
+  // getFeedbackByBaseProductSlug(@Param('slug') slug: string) {
+  //   return this.feedbackService.getFeedbackByProductSlug(slug);
+  // }
 
-  @Post()
-  @UseGuards(JwtGuard)
-  createFeedback(
-    @GetUser('Id') userId: number,
-    @Body() createFeedbackDto: CreateFeedbackDto,
-  ) {
-    return this.feedbackService.createFeedback(userId, createFeedbackDto);
-  }
+  // @Post()
+  // @UseGuards(JwtGuard)
+  // createFeedback(
+  //   @GetUser('Id') userId: number,
+  //   @Body() createFeedbackDto: CreateFeedbackDto,
+  // ) {
+  //   return this.feedbackService.createFeedback(userId, createFeedbackDto);
+  // }
 }

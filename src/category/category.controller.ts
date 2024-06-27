@@ -23,6 +23,11 @@ export class CategoryController {
     return this.categoryService.getAllCategories();
   }
 
+  @Get('/:slug')
+  getBySlug(@Param('slug') slug: string) {
+    return this.categoryService.getBySlug(slug);
+  }
+
   @Post()
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRoles.ADMIN)
@@ -35,10 +40,5 @@ export class CategoryController {
   @Roles(UserRoles.ADMIN)
   updateCategory(@Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoryService.updateCategory(updateCategoryDto);
-  }
-
-  @Get('/:slug')
-  getBySlug(@Param('slug') slug: string) {
-    return this.categoryService.getBySlug(slug);
   }
 }

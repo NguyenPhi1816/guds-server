@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import {
-  ExtractJwt,
-  Strategy,
-} from 'passport-jwt';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -17,27 +14,24 @@ export class RefreshTokenStrategy extends PassportStrategy(
     private prisma: PrismaService,
   ) {
     super({
-      jwtFromRequest:
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: config.get(
-        'JWT_REFRESH_SECRET',
-      ),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: config.get('JWT_REFRESH_SECRET'),
     });
   }
 
   async validate(payload: any) {
-    const user =
-      await this.prisma.user.findUnique({
-        where: {
-          PhoneNumber: payload.phoneNumber,
-        },
-      });
-    const role =
-      await this.prisma.userRole.findUnique({
-        where: { Id: payload.userRoleId },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: {
+        phoneNumber: payload.phoneNumber,
+      },
+    });
+    const role = await this.prisma.role.findUnique({
+      where: { id: payload.userRoleId },
+    });
     const extendedUser = user as any;
-    extendedUser.roles = [role.Name];
+    extendedUser.roles = [role.name];
+    console.log(extendedUser);
+
     return extendedUser;
   }
 }

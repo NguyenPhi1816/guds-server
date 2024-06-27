@@ -18,22 +18,22 @@ import { UserRoles } from 'src/constants/enum';
 export class OrderController {
   constructor(private orderService: OrderService) {}
 
-  @Post()
-  @UseGuards(JwtGuard)
-  createOrder(
-    @GetUser('Id') userId: number,
-    @Body() createOrderDto: CreateOrderDto,
-  ) {
-    return this.orderService.createOrder(userId, createOrderDto);
-  }
+  // @Post()
+  // @UseGuards(JwtGuard)
+  // createOrder(
+  //   @GetUser('Id') userId: number,
+  //   @Body() createOrderDto: CreateOrderDto,
+  // ) {
+  //   return this.orderService.createOrder(userId, createOrderDto);
+  // }
 
-  @Patch('/:orderId/:status')
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
-  updateOrder(
-    @Param('orderId') orderId: string,
-    @Param('status') status: string,
-  ) {
-    return this.orderService.updateOrder(orderId, status);
-  }
+  // @Patch('/:orderId/:status')
+  // @Roles(UserRoles.ADMIN)
+  // @UseGuards(JwtGuard, RolesGuard)
+  // updateOrder(
+  //   @Param('orderId') orderId: string,
+  //   @Param('status') status: string,
+  // ) {
+  //   return this.orderService.updateOrder(orderId, status);
+  // }
 }

@@ -29,11 +29,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
   @Post('refresh-token')
-  refreshToken(
-    @GetUser('PhoneNumber') phoneNumber: string,
-  ) {
-    return this.authService.refreshToken(
-      phoneNumber,
-    );
+  refreshToken(@GetUser('phoneNumber') phoneNumber: string) {
+    console.log(phoneNumber);
+
+    return this.authService.refreshToken(phoneNumber);
   }
 }

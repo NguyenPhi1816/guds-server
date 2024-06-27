@@ -10,6 +10,12 @@ import { OrderModule } from './order/order.module';
 import { PaymentModule } from './payment/payment.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { CartModule } from './cart/cart.module';
+import { BrandModule } from './brand/brand.module';
+import { OptionValueService } from './option-value/option-value.service';
+import { ProductVariantService } from './product-variant/product-variant.service';
+import { ProductVariantModule } from './product-variant/product-variant.module';
+import { OptionValueModule } from './option-value/option-value.module';
+import { ImageModule } from './image/image.module';
 
 @Module({
   imports: [
@@ -26,6 +32,10 @@ import { CartModule } from './cart/cart.module';
     PaymentModule,
     FeedbackModule,
     CartModule,
+    BrandModule,
+    ProductVariantModule,
+    OptionValueModule,
+    ImageModule,
   ],
 })
 export class AppModule {}

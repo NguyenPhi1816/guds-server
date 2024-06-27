@@ -1,4 +1,10 @@
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import {
+  Allow,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 
 export class AddCategoryDto {
   @IsString()
@@ -12,6 +18,10 @@ export class AddCategoryDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsInt()
+  @ValidateIf((object, value) => value !== null)
+  parentId: number | null;
 }
 
 export class UpdateCategoryDto {
@@ -30,4 +40,8 @@ export class UpdateCategoryDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsInt()
+  @ValidateIf((object, value) => value !== null)
+  parentId: number | null;
 }

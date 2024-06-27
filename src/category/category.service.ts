@@ -11,13 +11,33 @@ import {
   CategoryResponseDto,
   ProductVariantResponseDto,
 } from './dto/response.dto';
+import internal from 'stream';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
   async getAllCategories() {
-    const categories = await this.prisma.category.findMany();
+    const categories = await this.prisma.category.findMany({
+      where: { parentId: null },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        image: true,
+        description: true,
+        children: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            image: true,
+            description: true,
+          },
+        },
+      },
+    });
     return categories;
   }
 
@@ -25,10 +45,11 @@ export class CategoryService {
     try {
       const category = await this.prisma.category.create({
         data: {
-          Name: addCategoryDto.name,
-          Image: addCategoryDto.image,
-          Slug: normalizeName(addCategoryDto.name),
-          Description: addCategoryDto.description,
+          name: addCategoryDto.name,
+          image: addCategoryDto.image,
+          slug: normalizeName(addCategoryDto.name),
+          description: addCategoryDto.description,
+          parentId: addCategoryDto.parentId,
         },
       });
       return category;
@@ -46,12 +67,13 @@ export class CategoryService {
       console.log(updateCategoryDto);
 
       const category = await this.prisma.category.update({
-        where: { Id: updateCategoryDto.id },
+        where: { id: updateCategoryDto.id },
         data: {
-          Name: updateCategoryDto.name,
-          Slug: normalizeName(updateCategoryDto.name),
-          Image: updateCategoryDto.image,
-          Description: updateCategoryDto.description,
+          name: updateCategoryDto.name,
+          slug: normalizeName(updateCategoryDto.name),
+          image: updateCategoryDto.image,
+          description: updateCategoryDto.description,
+          parentId: updateCategoryDto.parentId,
         },
       });
       return category;
@@ -67,59 +89,95 @@ export class CategoryService {
   async getBySlug(slug: string, limit: number = 100) {
     try {
       const category = await this.prisma.category.findUnique({
-        where: { Slug: slug },
+        where: { slug: slug },
         include: {
-          baseProducts: {
-            include: {
-              productVariants: {
+          baseProductCategories: {
+            take: limit,
+            select: {
+              baseProduct: {
                 select: {
-                  Id: true,
-                  Image: true,
-                  prices: {
-                    orderBy: {
-                      UpdatedAt: 'desc',
-                    },
-                    take: 1,
-                    select: {
-                      Price: true,
-                    },
-                  },
+                  productVariants: true,
                 },
               },
+            },
+          },
+          // baseProducts: {
+          //   include: {
+          //     productVariants: {
+          //       select: {
+          //         Id: true,
+          //         Image: true,
+          //         prices: {
+          //           orderBy: {
+          //             UpdatedAt: 'desc',
+          //           },
+          //           take: 1,
+          //           select: {
+          //             Price: true,
+          //           },
+          //         },
+          //       },
+          //     },
+          //   },
+          // },
+        },
+      });
+
+      // const variants: ProductVariantResponseDto[] = [];
+
+      // category.baseProducts.map((baseProduct) =>
+      //   baseProduct.productVariants.map((variant) => {
+      //     if (variants.length < limit) {
+      //       variants.push({
+      //         id: baseProduct.Id,
+      //         slug: baseProduct.Slug,
+      //         name: baseProduct.Name,
+      //         variantId: variant.Id,
+      //         image: variant.Image,
+      //         price: variant.prices[0].Price,
+      //       });
+      //     } else {
+      //       return;
+      //     }
+      //   }),
+      // );
+
+      // const response: CategoryResponseDto = {
+      //   id: category.Id,
+      //   slug: category.Slug,
+      //   name: category.Name,
+      //   image: category.Image,
+      //   description: category.Description,
+      //   products: variants,
+      // };
+
+      return category;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addBaseProductToCategory(
+    prisma: any,
+    baseProductId: number,
+    categoryId: number,
+  ) {
+    try {
+      const baseProductCategory = await prisma.baseProductCategory.create({
+        data: {
+          categoryId: categoryId,
+          baseProductId: baseProductId,
+        },
+        select: {
+          category: {
+            select: {
+              name: true,
             },
           },
         },
       });
 
-      const variants: ProductVariantResponseDto[] = [];
-
-      category.baseProducts.map((baseProduct) =>
-        baseProduct.productVariants.map((variant) => {
-          if (variants.length < limit) {
-            variants.push({
-              id: baseProduct.Id,
-              slug: baseProduct.Slug,
-              name: baseProduct.Name,
-              variantId: variant.Id,
-              image: variant.Image,
-              price: variant.prices[0].Price,
-            });
-          } else {
-            return;
-          }
-        }),
-      );
-
-      const response: CategoryResponseDto = {
-        id: category.Id,
-        slug: category.Slug,
-        name: category.Name,
-        image: category.Image,
-        description: category.Description,
-        products: variants,
-      };
-
-      return response;
+      return baseProductCategory.category;
     } catch (error) {
       throw error;
     }

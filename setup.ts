@@ -5,28 +5,28 @@ const argon = require('argon2');
 const prisma = new PrismaClient();
 
 async function setup() {
-  await prisma.userRole.create({
+  await prisma.role.create({
     data: {
-      Name: 'USER',
+      name: 'USER',
     },
   });
 
-  const admin = await prisma.userRole.create({
+  const admin = await prisma.role.create({
     data: {
-      Name: 'ADMIN',
+      name: 'ADMIN',
     },
   });
 
   // save user
   await prisma.user.create({
     data: {
-      FirstName: 'ADMIN',
-      LastName: 'ADMIN',
-      Address: 'Just for Admin',
-      DateOfBirth: new Date(),
-      Email: 'guds.admin@gmail.com',
-      PhoneNumber: '0999999999',
-      Gender: 'MALE',
+      firstName: 'ADMIN',
+      lastName: 'ADMIN',
+      address: 'Just for Admin',
+      dateOfBirth: new Date(),
+      email: 'guds.admin@gmail.com',
+      phoneNumber: '0999999999',
+      gender: 'MALE',
     },
   });
 
@@ -35,16 +35,10 @@ async function setup() {
   // save account
   const user = await prisma.account.create({
     data: {
-      UserPhoneNumber: '0999999999',
-      Password: hashedPass,
-      Status: 'ACTIVE',
-      UserRoleId: admin.Id,
-    },
-  });
-
-  await prisma.cart.create({
-    data: {
-      UserId: user.Id,
+      userPhoneNumber: '0999999999',
+      password: hashedPass,
+      status: 'ACTIVE',
+      roleId: admin.id,
     },
   });
 }

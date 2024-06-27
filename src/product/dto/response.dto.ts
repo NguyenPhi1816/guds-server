@@ -14,75 +14,6 @@ import {
 import { Type } from 'class-transformer';
 import { ProductVariantResponseDto } from 'src/category/dto/response.dto';
 
-export class CreateProductOptionValueDto {
-  @IsString()
-  @IsNotEmpty()
-  option: string;
-
-  @IsString()
-  @IsNotEmpty()
-  value: string;
-}
-
-export class CreateProductVariantDto {
-  @IsInt()
-  @Min(0)
-  price: number;
-
-  @IsInt()
-  @Min(0)
-  quantity: number;
-
-  @IsUrl()
-  image: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateProductOptionValueDto)
-  optionValues: CreateProductOptionValueDto[];
-}
-
-export class CreateProductOptionDto {
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsString({ each: true })
-  values: string[];
-}
-
-export class CreateProductDto {
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @IsInt()
-  categoryId: number;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsUrl({}, { each: true })
-  images: string[];
-
-  @IsArray()
-  @ArrayMinSize(0)
-  @ValidateNested({ each: true })
-  @Type(() => CreateProductOptionDto)
-  options: CreateProductOptionDto[];
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @ValidateNested({ each: true })
-  @Type(() => CreateProductVariantDto)
-  variants: CreateProductVariantDto[];
-}
-
 export class OptionValuesResponseDto {
   @IsString()
   option: String;
@@ -100,18 +31,18 @@ export class OptionValueResponseDto {
   value: String;
 }
 
-export class ImageResponseDto {
+export class BaseProductImagesResponseDto {
   @IsInt()
-  Id: number;
+  id: number;
 
   @IsUrl()
-  Path: string;
+  path: string;
 
   @IsBoolean()
-  IsDefault: boolean;
+  isDefault: boolean;
 }
 
-export class ProductVariantDto {
+export class BaseProductVariantDto {
   @IsInt()
   id: number;
 
@@ -130,6 +61,38 @@ export class ProductVariantDto {
   price: number;
 }
 
+export class BaseProductBrandResponseDto {
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+
+  @IsUrl()
+  image: string;
+}
+
+export class BaseProductCategoryChildrenResponseDto {
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+}
+
+export class BaseProductCategoryResponseDto {
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BaseProductCategoryChildrenResponseDto)
+  children: BaseProductCategoryChildrenResponseDto[];
+}
+
 export class BaseProductResponseDto {
   @IsInt()
   id: number;
@@ -143,8 +106,11 @@ export class BaseProductResponseDto {
   @IsString()
   description: string;
 
-  @IsInt()
-  categoryId: number;
+  @Type(() => BaseProductCategoryResponseDto)
+  category: BaseProductCategoryResponseDto;
+
+  @Type(() => ProductVariantResponseDto)
+  brand: BaseProductBrandResponseDto;
 
   @IsString()
   status: String;
@@ -160,8 +126,8 @@ export class BaseProductResponseDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ImageResponseDto)
-  images: ImageResponseDto[];
+  @Type(() => BaseProductImagesResponseDto)
+  images: BaseProductImagesResponseDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -175,6 +141,33 @@ export class BaseProductResponseDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ProductVariantDto)
-  productVariants: ProductVariantDto[];
+  @Type(() => BaseProductVariantDto)
+  productVariants: BaseProductVariantDto[];
+}
+
+export class BasicBaseProductResponseDto {
+  @IsInt()
+  id: number;
+
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+
+  @IsString()
+  description: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  categories: string[];
+
+  @IsString()
+  brand: string;
+
+  @IsString()
+  status: string;
+
+  @IsUrl()
+  image: string;
 }
