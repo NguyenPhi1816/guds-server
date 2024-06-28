@@ -1,4 +1,4 @@
-export enum AccountStatus {
+export enum optionValueStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
 }

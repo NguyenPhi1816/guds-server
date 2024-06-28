@@ -1,11 +1,42 @@
-import { IsArray, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 
-export class OptionValuesResponseDto {
+export class ValueResponseDto {
+  @IsInt()
+  @IsNotEmpty()
+  valueId: number;
+
   @IsString()
   @IsNotEmpty()
-  option: string;
+  valueName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  valueStatus: string;
+}
+
+export class OptionValuesResponseDto {
+  @IsInt()
+  @IsNotEmpty()
+  optionId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  optionName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  optionStatus: string;
 
   @IsArray()
-  @IsString({ each: true })
-  values: string[];
+  @ValidateNested({ each: true })
+  @Type(() => ValueResponseDto)
+  values: ValueResponseDto[];
 }

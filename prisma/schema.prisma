@@ -57,8 +57,8 @@ model Category {
   parentId    Int?
 
   baseProductCategories BaseProductCategory[]
-  parent      Category? @relation("CategoryParent", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryParent")
+  parent                Category?             @relation("CategoryParent", fields: [parentId], references: [id])
+  children              Category[]            @relation("CategoryParent")
 }
 
 model BaseProduct {
@@ -89,18 +89,24 @@ model Option {
   id            Int    @id @default(autoincrement())
   name          String
   baseProductId Int
+  status        String
 
   baseProduct  BaseProduct   @relation(fields: [baseProductId], references: [id])
   optionValues OptionValue[]
+
+  @@unique([name, baseProductId])
 }
 
 model OptionValue {
   id       Int    @id @default(autoincrement())
   value    String
   optionId Int
+  status   String
 
   option              Option               @relation(fields: [optionId], references: [id])
   optionValueVariants OptionValueVariant[]
+
+  @@unique([optionId, value])
 }
 
 model OptionValueVariant {
