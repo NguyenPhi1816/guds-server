@@ -1,4 +1,4 @@
 export enum UpdateQuantityType {
-  increment,
-  decrement,
+  INCREMENT = 'INCREMENT',
+  DECREMENT = 'DECREMENT',
 }
