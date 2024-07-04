@@ -14,6 +14,7 @@ import {
   CreateBaseProductDto,
   OptionValueResponseDto,
   OptionValuesResponseDto,
+  ProductVariantResponseDto,
 } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import { BaseProductStatus } from 'src/constants/enum/base-product-status.enum';
@@ -37,50 +38,52 @@ export class ProductService {
     private brandService: BrandService,
   ) {}
 
-  // async getAllBaseProduct(): Promise<BasicBaseProductResponseDto[]> {
-  //   try {
-  //     const baseProducts = await this.prisma.baseProduct.findMany({
-  //       include: {
-  //         baseProductCategories: {
-  //           select: {
-  //             category: {
-  //               select: {
-  //                 name: true,
-  //               },
-  //             },
-  //           },
-  //         },
-  //         images: {
-  //           where: { isDefault: true },
-  //           select: {
-  //             path: true,
-  //           },
-  //         },
-  //       },
-  //     });
+  async getAllBaseProduct(): Promise<BasicBaseProductResponseDto[]> {
+    try {
+      const baseProducts = await this.prisma.baseProduct.findMany({
+        include: {
+          brand: true,
+          baseProductCategories: {
+            select: {
+              category: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          images: {
+            where: { isDefault: true },
+            select: {
+              path: true,
+            },
+          },
+        },
+      });
 
-  //     const responses: BasicBaseProductResponseDto[] = baseProducts.map(
-  //       (item) => {
-  //         const categories: string[] = item.baseProductCategories.map(
-  //           (baseProductCategory) => baseProductCategory.category.name,
-  //         );
+      const responses: BasicBaseProductResponseDto[] = baseProducts.map(
+        (item) => {
+          const categories: string[] = item.baseProductCategories.map(
+            (baseProductCategory) => baseProductCategory.category.name,
+          );
 
-  //         return {
-  //           id: item.id,
-  //           slug: item.slug,
-  //           name: item.name,
-  //           description: item.description,
-  //           categories: categories,
-  //           status: item.status,
-  //           image: item.images[0].path,
-  //         };
-  //       },
-  //     );
-  //     return responses;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+          return {
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            description: item.description,
+            categories: categories,
+            brand: item.brand.name,
+            status: item.status,
+            image: item.images[0].path,
+          };
+        },
+      );
+      return responses;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async createBaseProduct(
     createBaseProductDto: CreateBaseProductDto,
@@ -155,244 +158,353 @@ export class ProductService {
     }
   }
 
-  // async getBySlug(slug: string) {
-  //   try {
-  //     // query by slug
-  //     const product = await this.prisma.baseProduct.findUnique({
-  //       where: { Slug: slug },
-  //       include: {
-  //         category: {
-  //           select: {
-  //             Slug: true,
-  //           },
-  //         },
-  //         images: {
-  //           select: {
-  //             Id: true,
-  //             Path: true,
-  //             IsDefault: true,
-  //           },
-  //         },
-  //         productVariants: {
-  //           select: {
-  //             Id: true,
-  //             Image: true,
-  //             Quantity: true,
-  //             feedbacks: {
-  //               select: {
-  //                 Rating: true,
-  //               },
-  //             },
-  //             orderDetails: {
-  //               select: {
-  //                 Quantity: true,
-  //                 order: {
-  //                   select: { Status: true },
-  //                 },
-  //               },
-  //             },
-  //             optionValueVariants: {
-  //               select: {
-  //                 optionValue: {
-  //                   select: {
-  //                     option: {
-  //                       select: {
-  //                         Name: true,
-  //                       },
-  //                     },
-  //                     Value: true,
-  //                   },
-  //                 },
-  //                 OptionValueId: true,
-  //               },
-  //             },
-  //             prices: {
-  //               orderBy: {
-  //                 UpdatedAt: 'desc',
-  //               },
-  //               take: 1,
-  //               select: {
-  //                 Price: true,
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //     });
+  async getBySlug(slug: string) {
+    try {
+      // query by slug
+      const product = await this.prisma.baseProduct.findUnique({
+        where: { slug: slug },
+        include: {
+          baseProductCategories: {
+            select: {
+              category: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          brand: true,
+          images: {
+            select: {
+              id: true,
+              path: true,
+              isDefault: true,
+            },
+          },
+          productVariants: {
+            select: {
+              id: true,
+              image: true,
+              quantity: true,
+              orderDetails: {
+                select: {
+                  quantity: true,
+                  order: {
+                    select: {
+                      status: true,
+                    },
+                  },
+                  review: {
+                    select: {
+                      rating: true,
+                    },
+                  },
+                },
+              },
+              optionValueVariants: {
+                select: {
+                  optionValue: {
+                    select: {
+                      option: {
+                        select: {
+                          name: true,
+                        },
+                      },
+                      value: true,
+                    },
+                  },
+                  optionValueId: true,
+                },
+              },
+              prices: {
+                orderBy: {
+                  updatedAt: 'desc',
+                },
+                take: 1,
+                select: {
+                  price: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-  //     // get relate products by getting products from base product category, limit is 5 items
-  //     const variantsInCategory = await this.categoryService.getBySlug(
-  //       product.category.Slug,
-  //       5,
-  //     );
+      if (!product) {
+        throw new NotFoundException('Không tìm thấy sản phẩm');
+      }
 
-  //     // get product variants from base product
-  //     const productVariants: ProductVariantDto[] = product.productVariants.map(
-  //       (variant) => {
-  //         const optionValue: OptionValueResponseDto[] = [];
+      // get relate products by getting products from base product category, limit is 5 items
+      const relatedProducts = await this.getProductsByCategorySlug(
+        product.baseProductCategories[0].category.slug,
+        5,
+      );
 
-  //         variant.optionValueVariants.map((item) =>
-  //           optionValue.push({
-  //             option: item.optionValue.option.Name,
-  //             value: item.optionValue.Value,
-  //           }),
-  //         );
+      // get product variants from base product
+      const productVariants: BaseProductVariantDto[] =
+        product.productVariants.map((variant) => {
+          const optionValue: OptionValueResponseDto[] = [];
 
-  //         return {
-  //           id: variant.Id,
-  //           image: variant.Image,
-  //           quantity: variant.Quantity,
-  //           optionValue: optionValue,
-  //           price: variant.prices[0].Price,
-  //         };
-  //       },
-  //     );
+          variant.optionValueVariants.map((item) =>
+            optionValue.push({
+              option: item.optionValue.option.name,
+              value: item.optionValue.value,
+            }),
+          );
 
-  //     const optionValues: OptionValuesResponseDto[] = [];
+          return {
+            id: variant.id,
+            image: variant.image,
+            quantity: variant.quantity,
+            optionValue: optionValue,
+            price: variant.prices[0].price,
+          };
+        });
 
-  //     product.productVariants.map((variant) =>
-  //       variant.optionValueVariants.map((item) => {
-  //         const existedOptionIndex = optionValues.findIndex(
-  //           (optionValue) =>
-  //             optionValue.option === item.optionValue.option.Name,
-  //         );
-  //         if (existedOptionIndex === -1) {
-  //           optionValues.push({
-  //             option: item.optionValue.option.Name,
-  //             values: [item.optionValue.Value],
-  //           });
-  //         } else {
-  //           const existedValueIndex = optionValues[
-  //             existedOptionIndex
-  //           ].values.findIndex((value) => value === item.optionValue.Value);
-  //           if (existedValueIndex === -1) {
-  //             optionValues[existedOptionIndex].values.push(
-  //               item.optionValue.Value,
-  //             );
-  //           }
-  //         }
-  //       }),
-  //     );
+      const optionValues: OptionValuesResponseDto[] = [];
 
-  //     // get average rating and number of feedbacks
-  //     let numberOfFeedbacks = 0;
+      product.productVariants.map((variant) =>
+        variant.optionValueVariants.map((item) => {
+          const existedOptionIndex = optionValues.findIndex(
+            (optionValue) =>
+              optionValue.option === item.optionValue.option.name,
+          );
+          if (existedOptionIndex === -1) {
+            optionValues.push({
+              option: item.optionValue.option.name,
+              values: [item.optionValue.value],
+            });
+          } else {
+            const existedValueIndex = optionValues[
+              existedOptionIndex
+            ].values.findIndex((value) => value === item.optionValue.value);
+            if (existedValueIndex === -1) {
+              optionValues[existedOptionIndex].values.push(
+                item.optionValue.value,
+              );
+            }
+          }
+        }),
+      );
 
-  //     const sumRating = product.productVariants.reduce((prev, variant) => {
-  //       const sum = variant.feedbacks.reduce((previousValue, feedback) => {
-  //         numberOfFeedbacks += 1;
-  //         return previousValue + feedback.Rating;
-  //       }, 0);
+      // number of reviews in this base product
+      let numberOfReviews = 0;
 
-  //       const average = (sum / variant.feedbacks.length) | 0;
-  //       return prev + average;
-  //     }, 0);
+      // summary rating of this base product
+      const sumRating = product.productVariants.reduce((prev, variant) => {
+        // number of review of this variant
+        let len = 0;
 
-  //     const averageRating = (sumRating / product.productVariants.length) | 0;
+        // get summary rating of this variant
+        const sum = variant.orderDetails.reduce(
+          (previousValue, orderDetail) => {
+            if (orderDetail.review) {
+              len += 1;
+              numberOfReviews += 1;
+              return previousValue + orderDetail.review.rating;
+            }
+            return previousValue;
+          },
+          0,
+        );
 
-  //     // get number of purchases
-  //     const numberOfPurchases = product.productVariants.reduce(
-  //       (prev, variant) => {
-  //         const sum = variant.orderDetails.reduce(
-  //           (previousValue, orderDetail) => {
-  //             if (orderDetail.order.Status !== OrderStatus.SUCCESS) {
-  //               return previousValue;
-  //             }
-  //             return previousValue + orderDetail.Quantity;
-  //           },
-  //           0,
-  //         );
-  //         return prev + sum;
-  //       },
-  //       0,
-  //     );
+        return prev + sum;
+      }, 0);
 
-  //     const response: BaseProductResponseDto = {
-  //       id: product.Id,
-  //       slug: product.Slug,
-  //       name: product.Name,
-  //       description: product.Description,
-  //       categoryId: product.CategoryId,
-  //       status: product.Status,
-  //       averageRating: averageRating,
-  //       numberOfPurchases: numberOfPurchases,
-  //       numberOfFeedbacks: numberOfFeedbacks,
-  //       images: product.images,
-  //       optionValues: optionValues,
-  //       relatedProducts: variantsInCategory.products,
-  //       productVariants: productVariants,
-  //     };
+      // average rating of this base product
+      const averageRating = Math.round(sumRating / numberOfReviews) | 0;
 
-  //     return response;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      // get number of purchases
+      const numberOfPurchases = product.productVariants.reduce(
+        (prev, variant) => {
+          const sum = variant.orderDetails.reduce(
+            (previousValue, orderDetail) => {
+              if (orderDetail.order.status !== OrderStatus.SUCCESS) {
+                return previousValue;
+              }
+              return previousValue + orderDetail.quantity;
+            },
+            0,
+          );
+          return prev + sum;
+        },
+        0,
+      );
 
-  // async updateQuantity(
-  //   productVariantId: number,
-  //   quantity: number,
-  //   type: UpdateQuantityType,
-  // ) {
-  //   try {
-  //     switch (type) {
-  //       case UpdateQuantityType.decrement: {
-  //         await this.prisma.productVariant.update({
-  //           where: { Id: productVariantId },
-  //           data: {
-  //             Quantity: {
-  //               decrement: quantity,
-  //             },
-  //           },
-  //         });
-  //         break;
-  //       }
-  //       case UpdateQuantityType.increment: {
-  //         await this.prisma.productVariant.update({
-  //           where: { Id: productVariantId },
-  //           data: {
-  //             Quantity: {
-  //               increment: quantity,
-  //             },
-  //           },
-  //         });
-  //         break;
-  //       }
-  //       default:
-  //         break;
-  //     }
-  //   } catch (error) {}
-  // }
+      const response: BaseProductResponseDto = {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        categories: product.baseProductCategories.map(
+          (baseProductCategory) => baseProductCategory.category,
+        ),
+        brand: product.brand,
+        status: product.status,
+        averageRating: averageRating,
+        numberOfPurchases: numberOfPurchases,
+        numberOfReviews: numberOfReviews,
+        images: product.images,
+        optionValues: optionValues,
+        relatedProducts: relatedProducts,
+        productVariants: productVariants,
+      };
 
-  // async getBaseProductsByCategorySlug(slug: string) {
-  //   try {
-  //     const baseProducts = await this.prisma.baseProduct.findMany({
-  //       where: slug === '_' ? {} : { category: { Slug: slug } },
-  //       include: {
-  //         category: {
-  //           select: {
-  //             Name: true,
-  //           },
-  //         },
-  //         images: {
-  //           where: { IsDefault: true },
-  //           select: {
-  //             Path: true,
-  //           },
-  //         },
-  //       },
-  //     });
-  //     const responses = baseProducts.map((item) => ({
-  //       Id: item.Id,
-  //       Slug: item.Slug,
-  //       Name: item.Name,
-  //       Description: item.Description,
-  //       CategoryId: item.category.Name,
-  //       Status: item.Status,
-  //       image: item.images[0].Path,
-  //     }));
-  //     return responses;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateQuantity(
+    productVariantId: number,
+    quantity: number,
+    type: UpdateQuantityType,
+  ) {
+    try {
+      await this.prisma.productVariant.update({
+        where: { id: productVariantId },
+        data: {
+          quantity:
+            type === UpdateQuantityType.DECREMENT
+              ? {
+                  decrement: quantity,
+                }
+              : { increment: quantity },
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getProductsByCategorySlug(
+    slug: string,
+    limit: number = 20,
+  ): Promise<ProductVariantResponseDto[]> {
+    try {
+      const category = await this.prisma.category.findUnique({
+        where: {
+          slug: slug,
+        },
+        select: {
+          baseProductCategories: {
+            select: {
+              baseProduct: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                  productVariants: {
+                    select: {
+                      id: true,
+                      image: true,
+                      prices: {
+                        orderBy: {
+                          updatedAt: 'desc',
+                        },
+                        take: 1,
+                        select: {
+                          price: true,
+                        },
+                      },
+                      orderDetails: {
+                        select: {
+                          quantity: true,
+                          order: {
+                            select: {
+                              status: true,
+                            },
+                          },
+                          review: {
+                            select: {
+                              rating: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const productVariants: ProductVariantResponseDto[] = [];
+
+      category.baseProductCategories.map((baseProductCategory) =>
+        baseProductCategory.baseProduct.productVariants.map(
+          (productVariant) => {
+            // number of reviews in this base product
+            let numberOfReviews = 0;
+
+            // summary rating of this base product
+            const sumRating =
+              baseProductCategory.baseProduct.productVariants.reduce(
+                (prev, variant) => {
+                  // number of review of this variant
+                  let len = 0;
+
+                  // get summary rating of this variant
+                  const sum = variant.orderDetails.reduce(
+                    (previousValue, orderDetail) => {
+                      if (orderDetail.review) {
+                        len += 1;
+                        numberOfReviews += 1;
+                        return previousValue + orderDetail.review.rating;
+                      }
+                      return previousValue;
+                    },
+                    0,
+                  );
+
+                  return prev + sum;
+                },
+                0,
+              );
+
+            // average rating of this base product
+            const averageRating = Math.round(sumRating / numberOfReviews) | 0;
+
+            // get number of purchases
+            const numberOfPurchases =
+              baseProductCategory.baseProduct.productVariants.reduce(
+                (prev, variant) => {
+                  const sum = variant.orderDetails.reduce(
+                    (previousValue, orderDetail) => {
+                      if (orderDetail.order.status !== OrderStatus.SUCCESS) {
+                        return previousValue;
+                      }
+                      return previousValue + orderDetail.quantity;
+                    },
+                    0,
+                  );
+                  return prev + sum;
+                },
+                0,
+              );
+
+            productVariants.push({
+              id: baseProductCategory.baseProduct.id,
+              image: productVariant.image,
+              name: baseProductCategory.baseProduct.name,
+              price: productVariant.prices[0].price,
+              slug: baseProductCategory.baseProduct.slug,
+              variantId: productVariant.id,
+              averageRating: averageRating,
+              numberOfReviews: numberOfReviews,
+              numberOfPurchases: numberOfPurchases,
+            });
+          },
+        ),
+      );
+      return productVariants;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

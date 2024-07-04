@@ -101,56 +101,8 @@ export class CategoryService {
               },
             },
           },
-          // baseProducts: {
-          //   include: {
-          //     productVariants: {
-          //       select: {
-          //         Id: true,
-          //         Image: true,
-          //         prices: {
-          //           orderBy: {
-          //             UpdatedAt: 'desc',
-          //           },
-          //           take: 1,
-          //           select: {
-          //             Price: true,
-          //           },
-          //         },
-          //       },
-          //     },
-          //   },
-          // },
         },
       });
-
-      // const variants: ProductVariantResponseDto[] = [];
-
-      // category.baseProducts.map((baseProduct) =>
-      //   baseProduct.productVariants.map((variant) => {
-      //     if (variants.length < limit) {
-      //       variants.push({
-      //         id: baseProduct.Id,
-      //         slug: baseProduct.Slug,
-      //         name: baseProduct.Name,
-      //         variantId: variant.Id,
-      //         image: variant.Image,
-      //         price: variant.prices[0].Price,
-      //       });
-      //     } else {
-      //       return;
-      //     }
-      //   }),
-      // );
-
-      // const response: CategoryResponseDto = {
-      //   id: category.Id,
-      //   slug: category.Slug,
-      //   name: category.Name,
-      //   image: category.Image,
-      //   description: category.Description,
-      //   products: variants,
-      // };
-
       return category;
     } catch (error) {
       throw error;

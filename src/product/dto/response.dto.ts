@@ -12,7 +12,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProductVariantResponseDto } from 'src/category/dto/response.dto';
 
 export class OptionValuesResponseDto {
   @IsString()
@@ -81,16 +80,43 @@ export class BaseProductCategoryChildrenResponseDto {
 }
 
 export class BaseProductCategoryResponseDto {
+  @IsInt()
+  id: number;
+
+  @IsString()
+  slug: string;
+
+  @IsString()
+  name: string;
+}
+
+export class ProductVariantResponseDto {
+  @IsInt()
+  id: number;
+
   @IsString()
   slug: string;
 
   @IsString()
   name: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => BaseProductCategoryChildrenResponseDto)
-  children: BaseProductCategoryChildrenResponseDto[];
+  @IsInt()
+  variantId: number;
+
+  @IsUrl()
+  image: string;
+
+  @IsInt()
+  price: number;
+
+  @IsInt()
+  averageRating: number;
+
+  @IsInt()
+  numberOfReviews: number;
+
+  @IsInt()
+  numberOfPurchases: number;
 }
 
 export class BaseProductResponseDto {
@@ -106,8 +132,9 @@ export class BaseProductResponseDto {
   @IsString()
   description: string;
 
+  @IsArray()
   @Type(() => BaseProductCategoryResponseDto)
-  category: BaseProductCategoryResponseDto;
+  categories: BaseProductCategoryResponseDto[];
 
   @Type(() => ProductVariantResponseDto)
   brand: BaseProductBrandResponseDto;
@@ -119,7 +146,7 @@ export class BaseProductResponseDto {
   averageRating: number;
 
   @IsInt()
-  numberOfFeedbacks: number;
+  numberOfReviews: number;
 
   @IsInt()
   numberOfPurchases: number;

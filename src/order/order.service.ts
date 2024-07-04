@@ -1,220 +1,229 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, PaymentStatus } from 'src/constants/enum';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateOrderDetailDto, CreateOrderDto } from './dto';
-import { PaymentService } from 'src/payment/payment.service';
-import { CreatePaymentDto } from 'src/payment/dto';
-import { ProductService } from 'src/product/product.service';
-import { UpdateQuantityType } from 'src/constants/enum/update-quantiy-type.enum';
+import { CreateOrderDto } from './dto';
 
 @Injectable()
 export class OrderService {
-  constructor(
-    private prisma: PrismaService,
-    private paymentService: PaymentService,
-    private productService: ProductService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  // async createOrderDetail(
-  //   orderId: number,
-  //   createOrderDetailDto: CreateOrderDetailDto,
-  // ) {
-  //   try {
-  //     const productVariant = await this.prisma.productVariant.findUnique({
-  //       where: { Id: createOrderDetailDto.productVariantId },
-  //       select: {
-  //         Quantity: true,
-  //         baseProduct: {
-  //           select: {
-  //             Name: true,
-  //           },
-  //         },
-  //       },
-  //     });
+  async getAllOrders() {
+    try {
+      const orders = this.prisma.order.findMany();
+      return orders;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  //     if (productVariant.Quantity < createOrderDetailDto.quantity) {
-  //       throw new ConflictException(
-  //         `The quantity of product ${productVariant.baseProduct.Name} is not enough to make a purchase`,
-  //       );
-  //     }
+  async getOrdersByUserId(userId: number) {
+    try {
+      const orders = this.prisma.order.findMany({ where: { userId: userId } });
+      return orders;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  //     const orderDetail = await this.prisma.orderDetail.create({
-  //       data: {
-  //         OrderId: orderId,
-  //         ProductVariantId: createOrderDetailDto.productVariantId,
-  //         Quantity: createOrderDetailDto.quantity,
-  //       },
-  //       include: {
-  //         productVariant: {
-  //           select: {
-  //             prices: {
-  //               orderBy: {
-  //                 UpdatedAt: 'desc',
-  //               },
-  //               take: 1,
-  //               select: {
-  //                 Price: true,
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //     });
-  //     return orderDetail;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+  async createOrder(userId: number, createOrderDto: CreateOrderDto) {
+    try {
+      const productVariantQueries = createOrderDto.orderDetails.map(
+        (orderDetail) =>
+          this.prisma.productVariant.findUnique({
+            where: { id: orderDetail.productVariantId },
+          }),
+      );
 
-  // async createOrder(userId: number, createOrderDto: CreateOrderDto) {
-  //   try {
-  //     // save order
-  //     const order = await this.prisma.order.create({
-  //       data: {
-  //         Status: OrderStatus.PENDING,
-  //         CreateAt: new Date(),
-  //         Note: createOrderDto.note,
-  //         UserId: userId,
-  //       },
-  //     });
+      const productVariants = await Promise.all(productVariantQueries);
 
-  //     // create order details
-  //     const orderDetailPromises = createOrderDto.orderDetails.map(
-  //       (orderDetail) => this.createOrderDetail(order.Id, orderDetail),
-  //     );
+      const isValid = createOrderDto.orderDetails.reduce(
+        (prev, orderDetail, index) => {
+          return prev && productVariants[index].quantity > orderDetail.quantity;
+        },
+        true,
+      );
 
-  //     const orderDetails = await Promise.all(orderDetailPromises);
+      if (!isValid) {
+        throw new ConflictException('Số lượng sản phẩm không đủ');
+      }
 
-  //     // update quantity
-  //     const quantityUpdatePromises = orderDetails.map((detail) =>
-  //       this.productService.updateQuantity(
-  //         detail.ProductVariantId,
-  //         detail.Quantity,
-  //         UpdateQuantityType.decrement,
-  //       ),
-  //     );
+      const response = await this.prisma.$transaction(async (prisma) => {
+        // save order
+        const order = await prisma.order.create({
+          data: {
+            userId: userId,
+            status: OrderStatus.PENDING,
+            createAt: new Date(),
+            note: createOrderDto.note,
+            receiverName: createOrderDto.receiverName,
+            receiverAddress: createOrderDto.receiverAddress,
+            receiverPhoneNumber: createOrderDto.receiverPhoneNumber,
+          },
+        });
 
-  //     await Promise.all(quantityUpdatePromises);
+        // create order details
+        const orderDetailPromises = createOrderDto.orderDetails.map(
+          (orderDetail) =>
+            prisma.orderDetail.create({
+              data: {
+                orderId: order.id,
+                productVariantId: orderDetail.productVariantId,
+                quantity: orderDetail.quantity,
+              },
+              include: {
+                productVariant: {
+                  select: {
+                    prices: {
+                      orderBy: {
+                        updatedAt: 'desc',
+                      },
+                      take: 1,
+                      select: {
+                        price: true,
+                      },
+                    },
+                  },
+                },
+              },
+            }),
+        );
+        const orderDetails = await Promise.all(orderDetailPromises);
 
-  //     // create payment
-  //     const totalPrice = orderDetails.reduce(
-  //       (prev, detail) => prev + detail.productVariant.prices[0].Price,
-  //       0,
-  //     );
+        // update quantity
+        const quantityUpdatePromises = orderDetails.map((detail) =>
+          prisma.productVariant.update({
+            where: { id: detail.productVariantId },
+            data: { quantity: { decrement: detail.quantity } },
+          }),
+        );
+        await Promise.all(quantityUpdatePromises);
 
-  //     const createPaymentDto: CreatePaymentDto = {
-  //       amount: totalPrice,
-  //       paymentDate: createOrderDto.paymentDate
-  //         ? new Date(createOrderDto.paymentDate)
-  //         : null,
-  //       paymentMethod: createOrderDto.paymentMethod,
-  //       status:
-  //         createOrderDto.paymentMethod === PaymentMethod.CASH
-  //           ? PaymentStatus.PENDING
-  //           : PaymentStatus.SUCCESS,
-  //       transactionId: createOrderDto.transactionId,
-  //     };
-  //     const payment = await this.paymentService.createPayment(
-  //       order.Id,
-  //       createPaymentDto,
-  //     );
+        // create payment
+        const totalPrice = orderDetails.reduce(
+          (prev, detail) =>
+            prev + detail.productVariant.prices[0].price * detail.quantity,
+          0,
+        );
+        const payment = await prisma.payment.create({
+          data: {
+            totalPrice: totalPrice,
+            paymentMethod: createOrderDto.paymentMethod,
+            status:
+              createOrderDto.paymentMethod === PaymentMethod.CASH
+                ? PaymentStatus.PENDING
+                : PaymentStatus.SUCCESS,
+            orderId: order.id,
+            paymentDate: createOrderDto.paymentDate
+              ? new Date(createOrderDto.paymentDate)
+              : null,
+            transactionId: createOrderDto.transactionId,
+          },
+        });
 
-  //     return { order, orderDetails, payment };
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+        return { order, orderDetails, payment };
+      });
 
-  // async updateOrder(myOrderId: string, status: string) {
-  //   try {
-  //     const orderId = Number.parseInt(myOrderId);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  //     const _order = await this.prisma.order.findUnique({
-  //       where: { Id: orderId },
-  //       select: { Status: true },
-  //     });
+  async updateOrder(orderId: number, status: string) {
+    try {
+      const _order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { status: true },
+      });
 
-  //     if (_order.Status !== OrderStatus.PENDING) {
-  //       throw new ConflictException('Unable to update order.');
-  //     }
+      if (_order.status !== OrderStatus.PENDING) {
+        throw new ConflictException('Unable to update order.');
+      }
+      const response = this.prisma.$transaction(async (prisma) => {
+        switch (status) {
+          case OrderStatus.SUCCESS: {
+            const order = await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.SUCCESS },
+              include: {
+                payment: {
+                  select: {
+                    id: true,
+                    paymentMethod: true,
+                  },
+                },
+                orderDetails: true,
+              },
+            });
+            if (order.payment.paymentMethod === PaymentMethod.CASH) {
+              const payment = await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: {
+                  status: PaymentStatus.SUCCESS,
+                  paymentDate: new Date(),
+                  transactionId: null,
+                },
+              });
+              delete order.payment;
+              return { ...order, payment };
+            }
+            return order;
+          }
+          case OrderStatus.CANCEL: {
+            // update order status to CANCEL
+            const order = await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.CANCEL },
+              include: {
+                payment: {
+                  select: {
+                    id: true,
+                    paymentMethod: true,
+                  },
+                },
+                orderDetails: true,
+              },
+            });
 
-  //     switch (status) {
-  //       case OrderStatus.SUCCESS: {
-  //         const order = await this.prisma.order.update({
-  //           where: { Id: orderId },
-  //           data: { Status: OrderStatus.SUCCESS },
-  //           include: {
-  //             payment: {
-  //               select: {
-  //                 Id: true,
-  //                 PaymentMethod: true,
-  //               },
-  //             },
-  //             orderDetails: true,
-  //           },
-  //         });
-  //         if (order.payment.PaymentMethod === PaymentMethod.CASH) {
-  //           const payment = await this.paymentService.updatePayment(
-  //             order.payment.Id,
-  //             PaymentStatus.SUCCESS,
-  //             new Date(),
-  //             null,
-  //           );
-  //           delete order.payment;
-  //           return { ...order, payment };
-  //         }
-  //         return order;
-  //       }
-  //       case OrderStatus.CANCEL: {
-  //         // update order status to CANCEL
-  //         const order = await this.prisma.order.update({
-  //           where: { Id: orderId },
-  //           data: { Status: OrderStatus.CANCEL },
-  //           include: {
-  //             payment: {
-  //               select: {
-  //                 Id: true,
-  //                 PaymentMethod: true,
-  //               },
-  //             },
-  //             orderDetails: true,
-  //           },
-  //         });
+            // update quantity
+            const updateQuantityPromises = order.orderDetails.map((detail) =>
+              prisma.productVariant.update({
+                where: { id: detail.productVariantId },
+                data: { quantity: { increment: detail.quantity } },
+              }),
+            );
+            await Promise.all(updateQuantityPromises);
 
-  //         // update quantity
-  //         const updateQuantityPromises = order.orderDetails.map((detail) =>
-  //           this.productService.updateQuantity(
-  //             detail.ProductVariantId,
-  //             detail.Quantity,
-  //             UpdateQuantityType.increment,
-  //           ),
-  //         );
-  //         await Promise.all(updateQuantityPromises);
-
-  //         // update payment status to CANCEL (check by cash) or REFUND (check by another method)
-  //         if (order.payment.PaymentMethod === PaymentMethod.CASH) {
-  //           const payment = await this.paymentService.updatePayment(
-  //             order.payment.Id,
-  //             PaymentStatus.CANCEL,
-  //             null,
-  //             null,
-  //           );
-  //           delete order.payment;
-  //           return { ...order, payment };
-  //         } else {
-  //           const payment = await this.paymentService.updatePayment(
-  //             order.payment.Id,
-  //             PaymentStatus.REFUND,
-  //             new Date(),
-  //             'refunded-transaction-id',
-  //           );
-  //           delete order.payment;
-  //           return { ...order, payment };
-  //         }
-  //       }
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+            // update payment status to CANCEL (check by cash) or REFUND (check by another method)
+            if (order.payment.paymentMethod === PaymentMethod.CASH) {
+              const payment = await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: {
+                  status: PaymentStatus.CANCEL,
+                  paymentDate: null,
+                  transactionId: null,
+                },
+              });
+              delete order.payment;
+              return { ...order, payment };
+            } else {
+              const payment = await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: {
+                  status: PaymentStatus.REFUND,
+                  paymentDate: new Date(),
+                  transactionId: 'refunded-transaction-id',
+                },
+              });
+              delete order.payment;
+              return { ...order, payment };
+            }
+          }
+        }
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

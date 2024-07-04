@@ -80,3 +80,9 @@ export class UpdateValueStatusRequestDto {
   @IsNotEmpty()
   status: string;
 }
+
+export class GetOptionValuesByBaseProductSlugParams {
+  @IsString()
+  @IsNotEmpty()
+  baseProductSlug: string;
+}

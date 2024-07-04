@@ -185,12 +185,12 @@ model Review {
   comment       String?
   rating        Int
   createdAt     DateTime @default(now())
-  updateAt      DateTime
+  updateAt      DateTime?
   userId        Int
   orderDetailId Int      @unique
 
-  user        User        @relation(fields: [userId], references: [id])
-  orderDetail OrderDetail @relation(fields: [orderDetailId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
+  orderDetail OrderDetail? @relation(fields: [orderDetailId], references: [id])
 }
 
 model Cart {
@@ -202,7 +202,7 @@ model Cart {
   user           User           @relation(fields: [userId], references: [id])
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 
-  @@id([userId, productVariantId])
+  @@id(name: "cartId", [userId, productVariantId])
 }
 
 model Brand {

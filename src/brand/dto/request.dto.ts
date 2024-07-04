@@ -23,3 +23,9 @@ export class UpdateBrandDto {
   @IsNotEmpty()
   image: string;
 }
+
+export class GetBrandBySlugParams {
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+}

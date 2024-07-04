@@ -45,3 +45,9 @@ export class UpdateCategoryDto {
   @ValidateIf((object, value) => value !== null)
   parentId: number | null;
 }
+
+export class GetCategoryBySlugParams {
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+}

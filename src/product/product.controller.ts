@@ -4,16 +4,20 @@ import { Roles } from 'src/auth/decorator/roles.decorator';
 import { UserRoles } from 'src/constants/enum';
 import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
-import { CreateBaseProductDto } from './dto';
+import {
+  CreateBaseProductDto,
+  GetBaseProductBySlugParams,
+  GetProductsByCategorySlugParams,
+} from './dto';
 
 @Controller('api/products')
 export class ProductController {
   constructor(private productService: ProductService) {}
 
-  // @Get()
-  // getAllBaseProduct() {
-  //   return this.productService.getAllBaseProduct();
-  // }
+  @Get()
+  getAllBaseProduct() {
+    return this.productService.getAllBaseProduct();
+  }
 
   @Post()
   @Roles(UserRoles.ADMIN)
@@ -22,13 +26,15 @@ export class ProductController {
     return this.productService.createBaseProduct(createBaseProductDto);
   }
 
-  // @Get('/:slug')
-  // getBySlug(@Param('slug') slug: string) {
-  //   return this.productService.getBySlug(slug);
-  // }
+  @Get('/:slug')
+  getBySlug(@Param() params: GetBaseProductBySlugParams) {
+    return this.productService.getBySlug(params.slug);
+  }
 
-  // @Get('/category/:slug')
-  // getBaseProductsByCategorySlug(@Param('slug') slug: string) {
-  //   return this.productService.getBaseProductsByCategorySlug(slug);
-  // }
+  @Get('/category/:slug')
+  getBaseProductsByCategorySlug(
+    @Param() params: GetProductsByCategorySlugParams,
+  ) {
+    return this.productService.getProductsByCategorySlug(params.slug);
+  }
 }

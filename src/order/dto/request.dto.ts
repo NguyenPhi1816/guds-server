@@ -1,7 +1,6 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsDate,
   IsInt,
   IsNotEmpty,
   IsString,
@@ -37,8 +36,36 @@ export class CreateOrderDto {
   @ValidateIf((object, value) => value !== null)
   transactionId: string | null;
 
+  @IsString()
+  @IsNotEmpty()
+  receiverName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  receiverAddress: string;
+
+  @IsString()
+  @IsNotEmpty()
+  receiverPhoneNumber: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderDetailDto)
   orderDetails: CreateOrderDetailDto[];
+}
+
+export class GetOrdersByUserIdParams {
+  @Type(() => Number)
+  @IsInt()
+  userId: number;
+}
+
+export class UpdateOrderParams {
+  @Type(() => Number)
+  @IsInt()
+  orderId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  status: string;
 }

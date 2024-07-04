@@ -11,7 +11,11 @@ import { Roles } from 'src/auth/decorator/roles.decorator';
 import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { UserRoles } from 'src/constants/enum';
-import { AddCategoryDto, UpdateCategoryDto } from './dto';
+import {
+  AddCategoryDto,
+  GetCategoryBySlugParams,
+  UpdateCategoryDto,
+} from './dto';
 import { CategoryService } from './category.service';
 
 @Controller('api/categories')
@@ -24,8 +28,8 @@ export class CategoryController {
   }
 
   @Get('/:slug')
-  getBySlug(@Param('slug') slug: string) {
-    return this.categoryService.getBySlug(slug);
+  getBySlug(@Param() params: GetCategoryBySlugParams) {
+    return this.categoryService.getBySlug(params.slug);
   }
 
   @Post()

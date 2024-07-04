@@ -1,154 +1,216 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AddToCartDto, CartResponseDto } from './dto';
+import {
+  AddToCartRequestDto,
+  CartResponseDto,
+  UpdateCartQuantityRequestDto,
+} from './dto';
 import { UpdateCartType } from 'src/constants/enum';
 
 @Injectable()
 export class CartService {
   constructor(private prisma: PrismaService) {}
 
-  // async getCartByUserId(userId: number) {
-  //   try {
-  //     const cart = await this.prisma.cart.findUnique({
-  //       where: { UserId: userId },
-  //       select: {
-  //         cartDetails: {
-  //           select: {
-  //             Id: true,
-  //             productVariant: {
-  //               select: {
-  //                 Id: true,
-  //                 baseProduct: {
-  //                   select: {
-  //                     Name: true,
-  //                   },
-  //                 },
-  //                 prices: {
-  //                   orderBy: {
-  //                     UpdatedAt: 'desc',
-  //                   },
-  //                   take: 1,
-  //                   select: {
-  //                     Price: true,
-  //                   },
-  //                 },
-  //                 Image: true,
-  //                 optionValueVariants: {
-  //                   select: {
-  //                     optionValue: {
-  //                       select: {
-  //                         Value: true,
-  //                       },
-  //                     },
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //             Quantity: true,
-  //           },
-  //         },
-  //       },
-  //     });
+  async getCartByUserId(userId: number) {
+    try {
+      const carts = await this.prisma.cart.findMany({
+        where: { userId: userId },
+        select: {
+          productVariant: {
+            select: {
+              id: true,
+              baseProduct: {
+                select: {
+                  name: true,
+                },
+              },
+              prices: {
+                orderBy: {
+                  updatedAt: 'desc',
+                },
+                take: 1,
+                select: {
+                  price: true,
+                },
+              },
+              image: true,
+              optionValueVariants: {
+                select: {
+                  optionValue: {
+                    select: {
+                      value: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          quantity: true,
+        },
+      });
 
-  //     const response: CartResponseDto[] = cart.cartDetails.map((detail) => ({
-  //       id: detail.Id,
-  //       name: detail.productVariant.baseProduct.Name,
-  //       image: detail.productVariant.Image,
-  //       price: detail.productVariant.prices[0].Price,
-  //       optionValues: detail.productVariant.optionValueVariants.map(
-  //         (item) => item.optionValue.Value,
-  //       ),
-  //       quantity: detail.Quantity,
-  //     }));
-  //     return response;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      const response: CartResponseDto[] = carts.map((cart) => ({
+        productVariantId: cart.productVariant.id,
+        name: cart.productVariant.baseProduct.name,
+        image: cart.productVariant.image,
+        price: cart.productVariant.prices[0].price,
+        optionValues: cart.productVariant.optionValueVariants.map(
+          (item) => item.optionValue.value,
+        ),
+        quantity: cart.quantity,
+      }));
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  // async addProductToCart(userId: number, addToCartDto: AddToCartDto) {
-  //   try {
-  //     const cart = await this.prisma.cart.findUnique({
-  //       where: { Id: userId },
-  //       select: {
-  //         Id: true,
-  //         cartDetails: true,
-  //       },
-  //     });
+  async addProductToCart(userId: number, addToCartDto: AddToCartRequestDto) {
+    try {
+      const existedCart = await this.prisma.cart.findUnique({
+        where: {
+          cartId: {
+            userId: userId,
+            productVariantId: addToCartDto.productVariantId,
+          },
+        },
+      });
 
-  //     const existedCartDetail = cart.cartDetails.find(
-  //       (detail) => detail.ProductVariantId === addToCartDto.productVariantId,
-  //     );
+      const productVariant = await this.prisma.productVariant.findUnique({
+        where: {
+          id: addToCartDto.productVariantId,
+        },
+        select: {
+          quantity: true,
+        },
+      });
 
-  //     if (existedCartDetail) {
-  //       const cartDetail = await this.prisma.cartDetail.update({
-  //         where: { Id: existedCartDetail.Id },
-  //         data: {
-  //           Quantity: {
-  //             increment: addToCartDto.quantity,
-  //           },
-  //         },
-  //       });
-  //       return cartDetail;
-  //     }
+      if (existedCart) {
+        // check if inventory quantity is greater than existed cart quantity + request quantity
+        if (
+          productVariant.quantity >=
+          existedCart.quantity + addToCartDto.quantity
+        ) {
+          const cart = await this.prisma.cart.update({
+            where: {
+              cartId: {
+                userId: existedCart.userId,
+                productVariantId: existedCart.productVariantId,
+              },
+            },
+            data: {
+              quantity: {
+                increment: addToCartDto.quantity,
+              },
+            },
+          });
+          return cart;
+        } else {
+          throw new ConflictException('Số lượng hàng tồn kho không đủ');
+        }
+      }
 
-  //     const newCartDetail = await this.prisma.cartDetail.create({
-  //       data: {
-  //         CartId: cart.Id,
-  //         ProductVariantId: addToCartDto.productVariantId,
-  //         Quantity: addToCartDto.quantity,
-  //       },
-  //     });
-  //     return newCartDetail;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      // check if inventory quantity is greater than request quantity
+      if (productVariant.quantity >= addToCartDto.quantity) {
+        const newCart = await this.prisma.cart.create({
+          data: {
+            userId: userId,
+            productVariantId: addToCartDto.productVariantId,
+            quantity: addToCartDto.quantity,
+            create_at: new Date(),
+          },
+        });
+        return newCart;
+      } else {
+        throw new ConflictException('Số lượng hàng tồn kho không đủ');
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  // async updateCartDetailQuantity(_cartDetailId: string, type: string) {
-  //   try {
-  //     const cartDetailId = Number.parseInt(_cartDetailId);
+  async updateCartQuantity(
+    userId: number,
+    productVariantId: number,
+    updateCartQuantityRequestDto: UpdateCartQuantityRequestDto,
+  ) {
+    try {
+      const myCart = await this.prisma.cart.findUnique({
+        where: {
+          cartId: {
+            userId: userId,
+            productVariantId: productVariantId,
+          },
+        },
+        select: { quantity: true },
+      });
 
-  //     switch (type) {
-  //       case UpdateCartType.decrement: {
-  //         const cartDetail = await this.prisma.cartDetail.update({
-  //           where: { Id: cartDetailId },
-  //           data: {
-  //             Quantity: {
-  //               decrement: 1,
-  //             },
-  //           },
-  //         });
-  //         return cartDetail;
-  //       }
-  //       case UpdateCartType.increment: {
-  //         const cartDetail = await this.prisma.cartDetail.update({
-  //           where: { Id: cartDetailId },
-  //           data: {
-  //             Quantity: {
-  //               increment: 1,
-  //             },
-  //           },
-  //         });
-  //         return cartDetail;
-  //       }
-  //       default:
-  //         throw new BadRequestException('Unable to update cart detail');
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      if (!myCart) {
+        throw new NotFoundException('Không tìm thấy sản phẩm trong giỏ hàng');
+      }
 
-  // async deleteCartDetail(_cartDetailId: string) {
-  //   try {
-  //     const cartDetailId = Number.parseFloat(_cartDetailId);
-  //     const res = await this.prisma.cartDetail.delete({
-  //       where: { Id: cartDetailId },
-  //     });
-  //     return res;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+      if (updateCartQuantityRequestDto.type === UpdateCartType.increment) {
+        // check if inventory quantity is greater than request quantity
+        const productVariant = await this.prisma.productVariant.findUnique({
+          where: {
+            id: productVariantId,
+          },
+        });
+
+        if (
+          productVariant.quantity <
+          myCart.quantity + updateCartQuantityRequestDto.quantity
+        ) {
+          throw new ConflictException('Số lượng tồn kho không đủ');
+        }
+      } else if (
+        updateCartQuantityRequestDto.type === UpdateCartType.decrement
+      ) {
+        const diff = myCart.quantity - updateCartQuantityRequestDto.quantity;
+        if (diff === 0) {
+          // if request quantity is equal to cart quantity => delete cart
+          return this.deleteCart(userId, productVariantId);
+        } else if (diff < 0) {
+          // if request quantity is greater than cart quantity => not valid request quantity => throw exception
+          throw new ConflictException('Số lượng giảm không hợp lệ');
+        }
+      }
+
+      const cart = await this.prisma.cart.update({
+        where: {
+          cartId: {
+            userId: userId,
+            productVariantId: productVariantId,
+          },
+        },
+        data: {
+          quantity:
+            updateCartQuantityRequestDto.type === UpdateCartType.increment
+              ? { increment: updateCartQuantityRequestDto.quantity }
+              : { decrement: updateCartQuantityRequestDto.quantity },
+        },
+      });
+      return cart;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteCart(userId: number, productVariantId: number) {
+    try {
+      const res = await this.prisma.cart.delete({
+        where: {
+          cartId: { userId: userId, productVariantId: productVariantId },
+        },
+      });
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

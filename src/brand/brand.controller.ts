@@ -10,7 +10,7 @@ import {
 import { BrandService } from './brand.service';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { JwtGuard } from 'src/auth/guard';
-import { CreateBrandDto, UpdateBrandDto } from './dto';
+import { CreateBrandDto, GetBrandBySlugParams, UpdateBrandDto } from './dto';
 
 @Controller('api/brands')
 export class BrandController {
@@ -22,8 +22,8 @@ export class BrandController {
   }
 
   @Get('/:slug')
-  getBrandBySlug(@Param('slug') slug: string) {
-    return this.brandService.getBrandBySlug(slug);
+  getBrandBySlug(@Param() params: GetBrandBySlugParams) {
+    return this.brandService.getBrandBySlug(params.slug);
   }
 
   @Post()

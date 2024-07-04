@@ -15,6 +15,7 @@ import { UserRoles } from 'src/constants/enum';
 import {
   AddValuesToOptionRequestDto,
   CreateOptionValuesRequestDto,
+  GetOptionValuesByBaseProductSlugParams,
   UpdateOptionNameRequestDto,
   UpdateOptionStatusRequestDto,
   UpdateValueNameRequestDto,
@@ -38,10 +39,10 @@ export class OptionValueController {
 
   @Get('/:baseProductSlug')
   getOptionValuesByBaseProductSlug(
-    @Param('baseProductSlug') baseProductSlug: string,
+    @Param() params: GetOptionValuesByBaseProductSlugParams,
   ) {
     return this.optionValueService.getOptionValuesByBaseProductSlug(
-      baseProductSlug,
+      params.baseProductSlug,
     );
   }
 
