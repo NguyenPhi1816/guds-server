@@ -73,13 +73,7 @@ export class CreateBaseProductDto {
   images: string[];
 }
 
-export class GetBaseProductBySlugParams {
-  @IsString()
-  @IsNotEmpty()
-  slug: string;
-}
-
-export class GetProductsByCategorySlugParams {
+export class SlugParam {
   @IsString()
   @IsNotEmpty()
   slug: string;

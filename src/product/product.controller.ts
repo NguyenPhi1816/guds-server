@@ -4,11 +4,7 @@ import { Roles } from 'src/auth/decorator/roles.decorator';
 import { UserRoles } from 'src/constants/enum';
 import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
-import {
-  CreateBaseProductDto,
-  GetBaseProductBySlugParams,
-  GetProductsByCategorySlugParams,
-} from './dto';
+import { CreateBaseProductDto, SlugParam } from './dto';
 
 @Controller('api/products')
 export class ProductController {
@@ -27,14 +23,17 @@ export class ProductController {
   }
 
   @Get('/:slug')
-  getBySlug(@Param() params: GetBaseProductBySlugParams) {
-    return this.productService.getBySlug(params.slug);
+  getBySlug(@Param() param: SlugParam) {
+    return this.productService.getBySlug(param.slug);
   }
 
   @Get('/category/:slug')
-  getBaseProductsByCategorySlug(
-    @Param() params: GetProductsByCategorySlugParams,
-  ) {
-    return this.productService.getProductsByCategorySlug(params.slug);
+  getBaseProductsByCategorySlug(@Param() param: SlugParam) {
+    return this.productService.getProductsByCategorySlug(param.slug);
+  }
+
+  @Get('/brand/:slug')
+  getBaseProductsByBrandSlug(@Param() param: SlugParam) {
+    return this.productService.getProductsByBrandSlug(param.slug);
   }
 }

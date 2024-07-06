@@ -1,14 +1,9 @@
 import {
-  ArrayMinSize,
   IsArray,
   IsBoolean,
-  IsEnum,
   IsInt,
-  IsNotEmpty,
-  IsNumber,
   IsString,
   IsUrl,
-  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';

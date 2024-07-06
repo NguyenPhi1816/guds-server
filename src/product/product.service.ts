@@ -1,12 +1,10 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
-  BaseProductCategoryResponseDto,
   BaseProductImagesResponseDto,
   BaseProductResponseDto,
   BaseProductVariantDto,
@@ -18,25 +16,12 @@ import {
 } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import { BaseProductStatus } from 'src/constants/enum/base-product-status.enum';
-import { OptionValue } from '@prisma/client';
-import { CategoryService } from 'src/category/category.service';
 import { OrderStatus } from 'src/constants/enum';
 import { UpdateQuantityType } from 'src/constants/enum/update-quantiy-type.enum';
-import { ImageService } from 'src/image/image.service';
-import { OptionValueService } from 'src/option-value/option-value.service';
-import { ProductVariantService } from 'src/product-variant/product-variant.service';
-import { BrandService } from 'src/brand/brand.service';
 
 @Injectable()
 export class ProductService {
-  constructor(
-    private prisma: PrismaService,
-    private categoryService: CategoryService,
-    private imageService: ImageService,
-    private optionValueService: OptionValueService,
-    private productVariantService: ProductVariantService,
-    private brandService: BrandService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async getAllBaseProduct(): Promise<BasicBaseProductResponseDto[]> {
     try {
@@ -158,6 +143,56 @@ export class ProductService {
     }
   }
 
+  async getSummary(baseProductSlug: string) {
+    try {
+      const numberOfReviewsQuery = this.prisma.review.count({
+        where: {
+          orderDetail: {
+            productVariant: { baseProduct: { slug: baseProductSlug } },
+          },
+        },
+      });
+      const averageRatingQuery = this.prisma.review.aggregate({
+        where: {
+          orderDetail: {
+            productVariant: { baseProduct: { slug: baseProductSlug } },
+          },
+        },
+        _avg: {
+          rating: true,
+        },
+      });
+      const orderDetailsQuery = this.prisma.orderDetail.findMany({
+        where: {
+          productVariant: { baseProduct: { slug: baseProductSlug } },
+          order: {
+            status: OrderStatus.SUCCESS,
+          },
+        },
+        select: {
+          quantity: true,
+        },
+      });
+
+      const [numberOfReviews, averageRatingResult, orderDetails] =
+        await Promise.all([
+          numberOfReviewsQuery,
+          averageRatingQuery,
+          orderDetailsQuery,
+        ]);
+
+      const averageRating = Math.round(averageRatingResult._avg.rating);
+
+      const numberOfPurchases = orderDetails.reduce(
+        (prev, orderDetail) => prev + orderDetail.quantity,
+        0,
+      );
+      return [numberOfReviews, averageRating, numberOfPurchases];
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getBySlug(slug: string) {
     try {
       // query by slug
@@ -188,21 +223,6 @@ export class ProductService {
               id: true,
               image: true,
               quantity: true,
-              orderDetails: {
-                select: {
-                  quantity: true,
-                  order: {
-                    select: {
-                      status: true,
-                    },
-                  },
-                  review: {
-                    select: {
-                      rating: true,
-                    },
-                  },
-                },
-              },
               optionValueVariants: {
                 select: {
                   optionValue: {
@@ -289,50 +309,11 @@ export class ProductService {
         }),
       );
 
-      // number of reviews in this base product
-      let numberOfReviews = 0;
+      // get summary
+      const [numberOfReviews, averageRating, numberOfPurchases] =
+        await this.getSummary(slug);
 
-      // summary rating of this base product
-      const sumRating = product.productVariants.reduce((prev, variant) => {
-        // number of review of this variant
-        let len = 0;
-
-        // get summary rating of this variant
-        const sum = variant.orderDetails.reduce(
-          (previousValue, orderDetail) => {
-            if (orderDetail.review) {
-              len += 1;
-              numberOfReviews += 1;
-              return previousValue + orderDetail.review.rating;
-            }
-            return previousValue;
-          },
-          0,
-        );
-
-        return prev + sum;
-      }, 0);
-
-      // average rating of this base product
-      const averageRating = Math.round(sumRating / numberOfReviews) | 0;
-
-      // get number of purchases
-      const numberOfPurchases = product.productVariants.reduce(
-        (prev, variant) => {
-          const sum = variant.orderDetails.reduce(
-            (previousValue, orderDetail) => {
-              if (orderDetail.order.status !== OrderStatus.SUCCESS) {
-                return previousValue;
-              }
-              return previousValue + orderDetail.quantity;
-            },
-            0,
-          );
-          return prev + sum;
-        },
-        0,
-      );
-
+      // response
       const response: BaseProductResponseDto = {
         id: product.id,
         slug: product.slug,
@@ -351,7 +332,6 @@ export class ProductService {
         relatedProducts: relatedProducts,
         productVariants: productVariants,
       };
-
       return response;
     } catch (error) {
       throw error;
@@ -385,48 +365,33 @@ export class ProductService {
     limit: number = 20,
   ): Promise<ProductVariantResponseDto[]> {
     try {
-      const category = await this.prisma.category.findUnique({
+      const baseProducts = await this.prisma.baseProduct.findMany({
         where: {
-          slug: slug,
-        },
-        select: {
           baseProductCategories: {
+            some: {
+              category: {
+                slug: slug,
+              },
+            },
+          },
+        },
+        take: limit,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          productVariants: {
+            take: 1,
             select: {
-              baseProduct: {
+              id: true,
+              image: true,
+              prices: {
+                orderBy: {
+                  updatedAt: 'desc',
+                },
+                take: 1,
                 select: {
-                  id: true,
-                  slug: true,
-                  name: true,
-                  productVariants: {
-                    select: {
-                      id: true,
-                      image: true,
-                      prices: {
-                        orderBy: {
-                          updatedAt: 'desc',
-                        },
-                        take: 1,
-                        select: {
-                          price: true,
-                        },
-                      },
-                      orderDetails: {
-                        select: {
-                          quantity: true,
-                          order: {
-                            select: {
-                              status: true,
-                            },
-                          },
-                          review: {
-                            select: {
-                              rating: true,
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
+                  price: true,
                 },
               },
             },
@@ -434,77 +399,94 @@ export class ProductService {
         },
       });
 
-      const productVariants: ProductVariantResponseDto[] = [];
-
-      category.baseProductCategories.map((baseProductCategory) =>
-        baseProductCategory.baseProduct.productVariants.map(
-          (productVariant) => {
-            // number of reviews in this base product
-            let numberOfReviews = 0;
-
-            // summary rating of this base product
-            const sumRating =
-              baseProductCategory.baseProduct.productVariants.reduce(
-                (prev, variant) => {
-                  // number of review of this variant
-                  let len = 0;
-
-                  // get summary rating of this variant
-                  const sum = variant.orderDetails.reduce(
-                    (previousValue, orderDetail) => {
-                      if (orderDetail.review) {
-                        len += 1;
-                        numberOfReviews += 1;
-                        return previousValue + orderDetail.review.rating;
-                      }
-                      return previousValue;
-                    },
-                    0,
-                  );
-
-                  return prev + sum;
-                },
-                0,
-              );
-
-            // average rating of this base product
-            const averageRating = Math.round(sumRating / numberOfReviews) | 0;
-
-            // get number of purchases
-            const numberOfPurchases =
-              baseProductCategory.baseProduct.productVariants.reduce(
-                (prev, variant) => {
-                  const sum = variant.orderDetails.reduce(
-                    (previousValue, orderDetail) => {
-                      if (orderDetail.order.status !== OrderStatus.SUCCESS) {
-                        return previousValue;
-                      }
-                      return previousValue + orderDetail.quantity;
-                    },
-                    0,
-                  );
-                  return prev + sum;
-                },
-                0,
-              );
-
-            productVariants.push({
-              id: baseProductCategory.baseProduct.id,
-              image: productVariant.image,
-              name: baseProductCategory.baseProduct.name,
-              price: productVariant.prices[0].price,
-              slug: baseProductCategory.baseProduct.slug,
-              variantId: productVariant.id,
-              averageRating: averageRating,
-              numberOfReviews: numberOfReviews,
-              numberOfPurchases: numberOfPurchases,
-            });
-          },
-        ),
+      // get the summary of each product (number of reviews, average rating, number of purchases)
+      const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
+        this.getSummary(baseProduct.slug),
       );
-      return productVariants;
+      const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
+
+      // prepare response
+      const response: ProductVariantResponseDto[] = [];
+
+      baseProducts.map((baseProduct, index) => {
+        const [numberOfReviews, averageRating, numberOfPurchases] =
+          baseProductSummaries[index];
+        const productVariant = baseProduct.productVariants[0];
+
+        response.push({
+          id: baseProduct.id,
+          image: productVariant.image,
+          name: baseProduct.name,
+          price: productVariant.prices[0].price,
+          slug: baseProduct.slug,
+          variantId: productVariant.id,
+          averageRating: averageRating,
+          numberOfReviews: numberOfReviews,
+          numberOfPurchases: numberOfPurchases,
+        });
+      });
+
+      return response;
     } catch (error) {
       throw error;
     }
+  }
+
+  async getProductsByBrandSlug(slug: string, limit: number = 20) {
+    const baseProducts = await this.prisma.baseProduct.findMany({
+      where: {
+        brand: { slug: slug },
+      },
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        productVariants: {
+          take: 1,
+          select: {
+            id: true,
+            image: true,
+            prices: {
+              orderBy: {
+                updatedAt: 'desc',
+              },
+              take: 1,
+              select: {
+                price: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    // get the summary of each product (number of reviews, average rating, number of purchases)
+    const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
+      this.getSummary(baseProduct.slug),
+    );
+    const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
+
+    // prepare response
+    const response: ProductVariantResponseDto[] = [];
+
+    baseProducts.map((baseProduct, index) => {
+      const [numberOfReviews, averageRating, numberOfPurchases] =
+        baseProductSummaries[index];
+      const productVariant = baseProduct.productVariants[0];
+
+      response.push({
+        id: baseProduct.id,
+        image: productVariant.image,
+        name: baseProduct.name,
+        price: productVariant.prices[0].price,
+        slug: baseProduct.slug,
+        variantId: productVariant.id,
+        averageRating: averageRating,
+        numberOfReviews: numberOfReviews,
+        numberOfPurchases: numberOfPurchases,
+      });
+    });
+
+    return response;
   }
 }
