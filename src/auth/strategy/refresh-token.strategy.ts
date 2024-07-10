@@ -30,8 +30,6 @@ export class RefreshTokenStrategy extends PassportStrategy(
     });
     const extendedUser = user as any;
     extendedUser.roles = [role.name];
-    console.log(extendedUser);
-
     return extendedUser;
   }
 }

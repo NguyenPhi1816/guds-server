@@ -14,7 +14,16 @@ export class BrandService {
   }
 
   async getBrandBySlug(slug: string) {
-    const brand = await this.prisma.brand.findUnique({ where: { slug: slug } });
+    const brand = await this.prisma.brand.findUnique({
+      where: { slug: slug },
+      include: {
+        baseProducts: {
+          include: {
+            productVariants: true,
+          },
+        },
+      },
+    });
     return brand;
   }
 

@@ -262,6 +262,8 @@ export class ProductService {
         5,
       );
 
+      console.log(product);
+
       // get product variants from base product
       const productVariants: BaseProductVariantDto[] =
         product.productVariants.map((variant) => {
@@ -413,17 +415,19 @@ export class ProductService {
           baseProductSummaries[index];
         const productVariant = baseProduct.productVariants[0];
 
-        response.push({
-          id: baseProduct.id,
-          image: productVariant.image,
-          name: baseProduct.name,
-          price: productVariant.prices[0].price,
-          slug: baseProduct.slug,
-          variantId: productVariant.id,
-          averageRating: averageRating,
-          numberOfReviews: numberOfReviews,
-          numberOfPurchases: numberOfPurchases,
-        });
+        if (productVariant) {
+          response.push({
+            id: baseProduct.id,
+            image: productVariant.image,
+            name: baseProduct.name,
+            price: productVariant.prices[0].price,
+            slug: baseProduct.slug,
+            variantId: productVariant.id,
+            averageRating: averageRating,
+            numberOfReviews: numberOfReviews,
+            numberOfPurchases: numberOfPurchases,
+          });
+        }
       });
 
       return response;
@@ -474,17 +478,19 @@ export class ProductService {
         baseProductSummaries[index];
       const productVariant = baseProduct.productVariants[0];
 
-      response.push({
-        id: baseProduct.id,
-        image: productVariant.image,
-        name: baseProduct.name,
-        price: productVariant.prices[0].price,
-        slug: baseProduct.slug,
-        variantId: productVariant.id,
-        averageRating: averageRating,
-        numberOfReviews: numberOfReviews,
-        numberOfPurchases: numberOfPurchases,
-      });
+      if (productVariant) {
+        response.push({
+          id: baseProduct.id,
+          image: productVariant.image,
+          name: baseProduct.name,
+          price: productVariant.prices[0].price,
+          slug: baseProduct.slug,
+          variantId: productVariant.id,
+          averageRating: averageRating,
+          numberOfReviews: numberOfReviews,
+          numberOfPurchases: numberOfPurchases,
+        });
+      }
     });
 
     return response;

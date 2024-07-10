@@ -97,7 +97,11 @@ export class AuthService {
         userPhoneNumber: userPhoneNumber,
       },
     });
-    return this.signTokens(account.id, account.userPhoneNumber, account.roleId);
+    return this.getNewAccessToken(
+      account.id,
+      account.userPhoneNumber,
+      account.roleId,
+    );
   }
 
   async signTokens(accountId: number, phoneNumber: string, userRoleId: number) {
@@ -123,5 +127,25 @@ export class AuthService {
       access_token: accessToken,
       refresh_token: refreshToken,
     };
+  }
+
+  async getNewAccessToken(
+    accountId: number,
+    phoneNumber: string,
+    userRoleId: number,
+  ) {
+    const payload = {
+      sub: accountId,
+      phoneNumber,
+      userRoleId,
+    };
+    const accessSecret = this.config.get('JWT_ACCESS_SECRET');
+    const accessExpire = this.config.get('JWT_ACCESS_EXPIRE');
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: accessExpire,
+      secret: accessSecret,
+    });
+    return { access_token: accessToken };
   }
 }

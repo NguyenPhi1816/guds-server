@@ -30,8 +30,6 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @Post('refresh-token')
   refreshToken(@GetUser('phoneNumber') phoneNumber: string) {
-    console.log(phoneNumber);
-
     return this.authService.refreshToken(phoneNumber);
   }
 }

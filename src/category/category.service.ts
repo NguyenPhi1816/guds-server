@@ -95,7 +95,7 @@ export class CategoryService {
             take: limit,
             select: {
               baseProduct: {
-                select: {
+                include: {
                   productVariants: true,
                 },
               },
