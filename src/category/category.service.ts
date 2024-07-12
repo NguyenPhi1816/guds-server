@@ -8,40 +8,57 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { AddCategoryDto, UpdateCategoryDto } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import {
+  AllCategoryResponse,
+  CategoryResponse,
   CategoryResponseDto,
   ProductVariantResponseDto,
 } from './dto/response.dto';
-import internal from 'stream';
-import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
-  async getAllCategories() {
+  async getAllCategories(): Promise<AllCategoryResponse[]> {
     const categories = await this.prisma.category.findMany({
-      where: { parentId: null },
       select: {
         id: true,
         slug: true,
         name: true,
         image: true,
         description: true,
-        children: {
+        parent: {
           select: {
             id: true,
-            slug: true,
             name: true,
-            image: true,
-            description: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            baseProductCategories: true,
+            children: true,
           },
         },
       },
     });
-    return categories;
+    const response: AllCategoryResponse[] = categories.map((category) => {
+      return {
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        image: category.image,
+        description: category.description,
+        parent: category.parent,
+        numberOfBaseProduct: category._count.baseProductCategories,
+        numberOfChildren: category._count.children,
+      };
+    });
+    return response;
   }
 
-  async addCategory(addCategoryDto: AddCategoryDto) {
+  async addCategory(
+    addCategoryDto: AddCategoryDto,
+  ): Promise<AllCategoryResponse> {
     try {
       const category = await this.prisma.category.create({
         data: {
@@ -51,8 +68,37 @@ export class CategoryService {
           description: addCategoryDto.description,
           parentId: addCategoryDto.parentId,
         },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          image: true,
+          description: true,
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          _count: {
+            select: {
+              baseProductCategories: true,
+              children: true,
+            },
+          },
+        },
       });
-      return category;
+      return {
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        image: category.image,
+        description: category.description,
+        parent: category.parent,
+        numberOfBaseProduct: category._count.baseProductCategories,
+        numberOfChildren: category._count.children,
+      };
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('Category name must be unique');

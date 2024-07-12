@@ -8,6 +8,31 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+export class CategoryResponse {
+  id: number;
+  slug: string;
+  name: string;
+  image: string;
+  description: string;
+}
+
+export class CategoryParentCategory {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+export class AllCategoryResponse {
+  id: number;
+  slug: string;
+  name: string;
+  image: string;
+  description: string;
+  parent: CategoryParentCategory | null;
+  numberOfBaseProduct: number;
+  numberOfChildren: number;
+}
+
 export class ProductVariantResponseDto {
   @IsInt()
   id: number;
