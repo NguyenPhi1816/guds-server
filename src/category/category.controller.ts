@@ -11,11 +11,7 @@ import { Roles } from 'src/auth/decorator/roles.decorator';
 import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { UserRoles } from 'src/constants/enum';
-import {
-  AddCategoryDto,
-  GetCategoryBySlugParams,
-  UpdateCategoryDto,
-} from './dto';
+import { AddCategoryDto, SlugParams, UpdateCategoryDto } from './dto';
 import { CategoryService } from './category.service';
 
 @Controller('api/categories')
@@ -27,8 +23,18 @@ export class CategoryController {
     return this.categoryService.getAllCategories();
   }
 
+  @Get('/children/:slug')
+  getCategoryChildren(@Param() params: SlugParams) {
+    return this.categoryService.getCategoryChildren(params.slug);
+  }
+
+  @Get('/product/:slug')
+  getCategoryProduct(@Param() params: SlugParams) {
+    return this.categoryService.getCategoryProducts(params.slug);
+  }
+
   @Get('/:slug')
-  getBySlug(@Param() params: GetCategoryBySlugParams) {
+  getBySlug(@Param() params: SlugParams) {
     return this.categoryService.getBySlug(params.slug);
   }
 

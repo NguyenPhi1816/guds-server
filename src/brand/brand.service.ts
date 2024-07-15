@@ -2,15 +2,87 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBrandDto, UpdateBrandDto } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
-import { BasicBrandResponseDto } from './dto/response.dto';
+import {
+  BasicBrandResponseDto,
+  BrandProductResponse,
+} from './dto/response.dto';
 
 @Injectable()
 export class BrandService {
   constructor(private prisma: PrismaService) {}
 
   async getAllBrands() {
-    const brands = await this.prisma.brand.findMany();
-    return brands;
+    const brands = await this.prisma.brand.findMany({
+      include: {
+        _count: {
+          select: {
+            baseProducts: true,
+          },
+        },
+      },
+    });
+    const response: BasicBrandResponseDto[] = brands.map((brand) => ({
+      id: brand.id,
+      slug: brand.slug,
+      name: brand.name,
+      image: brand.image,
+      numberOfProducts: brand._count.baseProducts,
+    }));
+    return response;
+  }
+
+  async getBrandProduct(slug: string) {
+    const brand = await this.prisma.brand.findUnique({
+      where: { slug: slug },
+      select: {
+        baseProducts: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            baseProductCategories: {
+              select: {
+                category: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            brand: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+              },
+            },
+            status: true,
+          },
+        },
+      },
+    });
+    const response: BrandProductResponse[] = brand.baseProducts.map(
+      (product) => {
+        return {
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          category: product.baseProductCategories.map((baseProductCategory) => {
+            const category = baseProductCategory.category;
+            return {
+              id: category.id,
+              slug: category.slug,
+              name: category.name,
+            };
+          }),
+          brand: product.brand,
+          status: product.status,
+        };
+      },
+    );
+    return response;
   }
 
   async getBrandBySlug(slug: string) {
@@ -39,7 +111,9 @@ export class BrandService {
     return brand;
   }
 
-  async createBrand(createBrandDto: CreateBrandDto) {
+  async createBrand(
+    createBrandDto: CreateBrandDto,
+  ): Promise<BasicBrandResponseDto> {
     try {
       const brand = await this.prisma.brand.create({
         data: {
@@ -47,14 +121,30 @@ export class BrandService {
           slug: normalizeName(createBrandDto.name),
           image: createBrandDto.image,
         },
+        include: {
+          _count: {
+            select: {
+              baseProducts: true,
+            },
+          },
+        },
       });
-      return brand;
+      const response: BasicBrandResponseDto = {
+        id: brand.id,
+        slug: brand.slug,
+        name: brand.name,
+        image: brand.image,
+        numberOfProducts: brand._count.baseProducts,
+      };
+      return response;
     } catch (error) {
       throw error;
     }
   }
 
-  async updateBrand(updateBrandDto: UpdateBrandDto) {
+  async updateBrand(
+    updateBrandDto: UpdateBrandDto,
+  ): Promise<BasicBrandResponseDto> {
     try {
       const brand = await this.prisma.brand.update({
         where: {
@@ -65,8 +155,22 @@ export class BrandService {
           slug: normalizeName(updateBrandDto.name),
           image: updateBrandDto.image,
         },
+        include: {
+          _count: {
+            select: {
+              baseProducts: true,
+            },
+          },
+        },
       });
-      return brand;
+      const response: BasicBrandResponseDto = {
+        id: brand.id,
+        slug: brand.slug,
+        name: brand.name,
+        image: brand.image,
+        numberOfProducts: brand._count.baseProducts,
+      };
+      return response;
     } catch (error) {
       throw error;
     }

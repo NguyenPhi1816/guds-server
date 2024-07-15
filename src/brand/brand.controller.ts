@@ -21,6 +21,11 @@ export class BrandController {
     return this.brandService.getAllBrands();
   }
 
+  @Get('/product/:slug')
+  getBrandProduct(@Param() params: GetBrandBySlugParams) {
+    return this.brandService.getBrandProduct(params.slug);
+  }
+
   @Get('/:slug')
   getBrandBySlug(@Param() params: GetBrandBySlugParams) {
     return this.brandService.getBrandBySlug(params.slug);

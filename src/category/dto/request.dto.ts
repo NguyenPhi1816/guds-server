@@ -46,7 +46,7 @@ export class UpdateCategoryDto {
   parentId: number | null;
 }
 
-export class GetCategoryBySlugParams {
+export class SlugParams {
   @IsString()
   @IsNotEmpty()
   slug: string;
