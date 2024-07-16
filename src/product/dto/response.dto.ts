@@ -177,9 +177,6 @@ export class BasicBaseProductResponseDto {
   @IsString()
   name: string;
 
-  @IsString()
-  description: string;
-
   @IsArray()
   @IsString({ each: true })
   categories: string[];
@@ -189,7 +186,4 @@ export class BasicBaseProductResponseDto {
 
   @IsString()
   status: string;
-
-  @IsUrl()
-  image: string;
 }

@@ -26,8 +26,12 @@ export class ProductService {
   async getAllBaseProduct(): Promise<BasicBaseProductResponseDto[]> {
     try {
       const baseProducts = await this.prisma.baseProduct.findMany({
-        include: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
           brand: true,
+          status: true,
           baseProductCategories: {
             select: {
               category: {
@@ -35,12 +39,6 @@ export class ProductService {
                   name: true,
                 },
               },
-            },
-          },
-          images: {
-            where: { isDefault: true },
-            select: {
-              path: true,
             },
           },
         },
@@ -56,11 +54,9 @@ export class ProductService {
             id: item.id,
             slug: item.slug,
             name: item.name,
-            description: item.description,
             categories: categories,
             brand: item.brand.name,
             status: item.status,
-            image: item.images[0].path,
           };
         },
       );
@@ -121,13 +117,11 @@ export class ProductService {
           id: baseProduct.id,
           slug: baseProduct.slug,
           name: baseProduct.name,
-          description: baseProduct.description,
           status: baseProduct.status,
           categories: baseProductCategories.map(
             (baseProductCategory) => baseProductCategory.category.name,
           ),
           brand: baseProduct.brand.name,
-          image: baseProductImages[0].path,
         };
         return response;
       });
