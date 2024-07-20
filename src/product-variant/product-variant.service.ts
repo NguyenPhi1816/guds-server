@@ -4,10 +4,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { OptionValueResponseDto, ProductVariantResponseDto } from './dto';
 import {
   CreateProductVariantRequestDto,
-  UpdatePriceRequestDto,
-  UpdateQuantityRequestDto,
+  UpdateVariantRequestDto,
 } from './dto/request.dto';
-import { UpdateQuantityType } from 'src/constants/enum/update-quantiy-type.enum';
 
 @Injectable()
 export class ProductVariantService {
@@ -89,35 +87,77 @@ export class ProductVariantService {
     }
   }
 
-  async updatePrice(updatePriceRequestDto: UpdatePriceRequestDto) {
+  async updateVariant(updateVariantRequestDto: UpdateVariantRequestDto) {
     try {
-      const price = await this.prisma.price.create({
-        data: {
-          price: updatePriceRequestDto.price,
-          productVariantId: updatePriceRequestDto.productVariantId,
-          updatedAt: new Date(),
-        },
-      });
-      return price;
-    } catch (error) {
-      throw error;
-    }
-  }
+      const response = await this.prisma.$transaction(async (prisma) => {
+        const productVariant = await prisma.productVariant.update({
+          where: {
+            id: updateVariantRequestDto.productVariantId,
+          },
+          data: {
+            image: updateVariantRequestDto.image,
+            quantity: updateVariantRequestDto.quantity,
+          },
+          select: {
+            id: true,
+            image: true,
+            quantity: true,
+            prices: {
+              orderBy: {
+                updatedAt: 'desc',
+              },
+              take: 1,
+              select: {
+                price: true,
+              },
+            },
+            optionValueVariants: {
+              select: {
+                optionValue: {
+                  select: {
+                    value: true,
+                    option: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
 
-  async updateQuantity(updateQuantityRequestDto: UpdateQuantityRequestDto) {
-    try {
-      const productVariant = await this.prisma.productVariant.update({
-        where: { id: updateQuantityRequestDto.productVariantId },
-        data: {
-          quantity:
-            updateQuantityRequestDto.type === UpdateQuantityType.INCREMENT
-              ? {
-                  increment: updateQuantityRequestDto.quantity,
-                }
-              : { decrement: updateQuantityRequestDto.quantity },
-        },
+        let price = { price: productVariant.prices[0].price };
+        if (price.price !== updateVariantRequestDto.price) {
+          price = await prisma.price.create({
+            data: {
+              price: updateVariantRequestDto.price,
+              updatedAt: new Date(),
+              productVariantId: updateVariantRequestDto.productVariantId,
+            },
+            select: {
+              price: true,
+            },
+          });
+        }
+
+        const optionValue: OptionValueResponseDto[] =
+          productVariant.optionValueVariants.map((optionValueVariant) => {
+            return {
+              option: optionValueVariant.optionValue.option.name,
+              value: optionValueVariant.optionValue.value,
+            };
+          });
+        const response: ProductVariantResponseDto = {
+          ...productVariant,
+          optionValue,
+          price: price.price,
+        };
+
+        return response;
       });
-      return productVariant;
+      return response;
     } catch (error) {
       throw error;
     }

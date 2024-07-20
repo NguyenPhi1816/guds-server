@@ -38,7 +38,6 @@ export class OptionValueService {
             data: {
               baseProductId: createOptionValuesRequestDto.baseProductId,
               name: option,
-              status: optionValueStatus.ACTIVE,
             },
           }),
         );
@@ -82,7 +81,6 @@ export class OptionValueService {
             return {
               optionId: savedOption.id,
               optionName: savedOption.name,
-              optionStatus: savedOption.status,
               values: values,
             };
           },
@@ -135,7 +133,6 @@ export class OptionValueService {
           const response: OptionValuesResponseDto = {
             optionId: option.id,
             optionName: option.name,
-            optionStatus: option.status,
             values: values,
           };
           return response;
@@ -180,7 +177,6 @@ export class OptionValueService {
         response.push({
           optionId: option.id,
           optionName: option.name,
-          optionStatus: option.status,
           values: values,
         });
       });
@@ -198,22 +194,6 @@ export class OptionValueService {
         where: { id: updateOptionNameRequestDto.optionId },
         data: {
           name: updateOptionNameRequestDto.name,
-        },
-      });
-      return option;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async updateOptionStatus(
-    updateOptionStatusRequestDto: UpdateOptionStatusRequestDto,
-  ) {
-    try {
-      const option = await this.prisma.option.update({
-        where: { id: updateOptionStatusRequestDto.optionId },
-        data: {
-          status: updateOptionStatusRequestDto.status,
         },
       });
       return option;

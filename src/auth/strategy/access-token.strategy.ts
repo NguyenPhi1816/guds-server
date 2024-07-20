@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserResponseDto } from 'src/user/dto/response';
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -21,12 +22,24 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
       where: {
         phoneNumber: payload.phoneNumber,
       },
+      include: {
+        account: {
+          select: {
+            status: true,
+          },
+        },
+      },
     });
     const role = await this.prisma.role.findUnique({
       where: { id: payload.userRoleId },
     });
-    const extendedUser = user as any;
-    extendedUser.roles = [role.name];
+    const status = user.account.status;
+    delete user.account;
+    const extendedUser: UserResponseDto = {
+      ...user,
+      role: role.name,
+      status,
+    };
     return extendedUser;
   }
 }

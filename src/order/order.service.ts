@@ -2,6 +2,11 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, PaymentStatus } from 'src/constants/enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto';
+import {
+  OrderDetailResponse,
+  OrderResponse,
+  PaymentResponse,
+} from './dto/response';
 
 @Injectable()
 export class OrderService {
@@ -38,7 +43,9 @@ export class OrderService {
 
       const isValid = createOrderDto.orderDetails.reduce(
         (prev, orderDetail, index) => {
-          return prev && productVariants[index].quantity > orderDetail.quantity;
+          return (
+            prev && productVariants[index].quantity >= orderDetail.quantity
+          );
         },
         true,
       );
@@ -221,6 +228,116 @@ export class OrderService {
           }
         }
       });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getOrderDetailById(orderId: number): Promise<OrderResponse> {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: {
+          id: orderId,
+        },
+        select: {
+          id: true,
+          receiverName: true,
+          receiverPhoneNumber: true,
+          receiverAddress: true,
+          note: true,
+          createAt: true,
+          status: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          orderDetails: {
+            select: {
+              id: true,
+              quantity: true,
+              productVariant: {
+                select: {
+                  image: true,
+                  baseProduct: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  optionValueVariants: {
+                    select: {
+                      optionValue: {
+                        select: {
+                          value: true,
+                        },
+                      },
+                    },
+                  },
+                  prices: {
+                    orderBy: {
+                      updatedAt: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                      price: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          payment: {
+            select: {
+              paymentMethod: true,
+              paymentDate: true,
+              totalPrice: true,
+              status: true,
+              transactionId: true,
+            },
+          },
+        },
+      });
+
+      const orderDetails: OrderDetailResponse[] = order.orderDetails.map(
+        (orderDetail) => {
+          return {
+            id: orderDetail.id,
+            productName: orderDetail.productVariant.baseProduct.name,
+            productImage: orderDetail.productVariant.image,
+            optionValue: orderDetail.productVariant.optionValueVariants.map(
+              (optionValueVariant) => optionValueVariant.optionValue.value,
+            ),
+            quantity: orderDetail.quantity,
+            price: orderDetail.productVariant.prices[0].price,
+          };
+        },
+      );
+
+      const payment: PaymentResponse = {
+        ...order.payment,
+        paymentDate: order.payment.paymentDate
+          ? order.payment.paymentDate.toISOString()
+          : null,
+      };
+
+      const response: OrderResponse = {
+        id: order.id,
+        userId: order.user.id,
+        userName: order.user.firstName + ' ' + order.user.lastName,
+        receiverName: order.receiverName,
+        receiverPhoneNumber: order.receiverPhoneNumber,
+        receiverAddress: order.receiverAddress,
+        note: order.note,
+        createAt: order.createAt.toISOString(),
+        status: order.status,
+        orderDetails: orderDetails,
+        payment: payment,
+      };
+      console.log('hello');
+
       return response;
     } catch (error) {
       throw error;

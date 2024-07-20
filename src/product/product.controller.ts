@@ -1,10 +1,23 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { ProductService } from './product.service';
 import { Roles } from 'src/auth/decorator/roles.decorator';
 import { UserRoles } from 'src/constants/enum';
 import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
-import { CreateBaseProductDto, SlugParam } from './dto';
+import {
+  CreateBaseProductDto,
+  SlugParam,
+  UpdateBaseProductDto,
+  UpdateBaseProductStatusRequestDto,
+} from './dto';
 
 @Controller('api/products')
 export class ProductController {
@@ -13,13 +26,6 @@ export class ProductController {
   @Get()
   getAllBaseProduct() {
     return this.productService.getAllBaseProduct();
-  }
-
-  @Post()
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
-  createBaseProduct(@Body() createBaseProductDto: CreateBaseProductDto) {
-    return this.productService.createBaseProduct(createBaseProductDto);
   }
 
   @Get('/:slug')
@@ -35,5 +41,31 @@ export class ProductController {
   @Get('/brand/:slug')
   getBaseProductsByBrandSlug(@Param() param: SlugParam) {
     return this.productService.getProductsByBrandSlug(param.slug);
+  }
+
+  @Post()
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  createBaseProduct(@Body() createBaseProductDto: CreateBaseProductDto) {
+    return this.productService.createBaseProduct(createBaseProductDto);
+  }
+
+  @Put()
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  updateBaseProduct(@Body() updateBaseProductDto: UpdateBaseProductDto) {
+    return this.productService.updateBaseProduct(updateBaseProductDto);
+  }
+
+  @Put('/status')
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  updateBaseProductStatus(
+    @Body()
+    updateBaseProductStatusRequestDto: UpdateBaseProductStatusRequestDto,
+  ) {
+    return this.productService.updateBaseProductStatus(
+      updateBaseProductStatusRequestDto,
+    );
   }
 }

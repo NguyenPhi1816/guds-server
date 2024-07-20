@@ -12,6 +12,7 @@ import { JwtGuard } from 'src/auth/guard';
 import {
   CreateOrderDto,
   GetOrdersByUserIdParams,
+  IdParam,
   UpdateOrderParams,
 } from './dto';
 import { OrderService } from './order.service';
@@ -41,6 +42,12 @@ export class OrderController {
   @UseGuards(JwtGuard, RolesGuard)
   getOrdersByUserId(@Param() params: GetOrdersByUserIdParams) {
     return this.orderService.getOrdersByUserId(params.userId);
+  }
+
+  @Get('/detail/:id')
+  @UseGuards(JwtGuard)
+  getOrderDetailById(@Param() params: IdParam) {
+    return this.orderService.getOrderDetailById(params.id);
   }
 
   @Post()

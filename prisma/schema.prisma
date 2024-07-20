@@ -89,7 +89,6 @@ model Option {
   id            Int    @id @default(autoincrement())
   name          String
   baseProductId Int
-  status        String
 
   baseProduct  BaseProduct   @relation(fields: [baseProductId], references: [id])
   optionValues OptionValue[]

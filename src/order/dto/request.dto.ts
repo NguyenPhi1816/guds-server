@@ -69,3 +69,9 @@ export class UpdateOrderParams {
   @IsNotEmpty()
   status: string;
 }
+
+export class IdParam {
+  @Type(() => Number)
+  @IsInt()
+  id: number;
+}

@@ -31,10 +31,6 @@ export class OptionValuesResponseDto {
   @IsNotEmpty()
   optionName: string;
 
-  @IsString()
-  @IsNotEmpty()
-  optionStatus: string;
-
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ValueResponseDto)

@@ -33,26 +33,19 @@ export class CreateProductVariantRequestDto {
   optionValueIds: number[];
 }
 
-export class UpdatePriceRequestDto {
+export class UpdateVariantRequestDto {
   @IsInt()
   @IsNotEmpty()
   productVariantId: number;
+
+  @IsUrl()
+  image: string;
 
   @IsNumber()
   @Min(0)
   price: number;
-}
-
-export class UpdateQuantityRequestDto {
-  @IsInt()
-  @IsNotEmpty()
-  productVariantId: number;
 
   @IsInt()
   @Min(0)
   quantity: number;
-
-  @IsEnum(UpdateQuantityType)
-  @IsNotEmpty()
-  type: UpdateQuantityType;
 }

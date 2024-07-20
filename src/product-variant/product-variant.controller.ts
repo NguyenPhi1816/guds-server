@@ -6,8 +6,7 @@ import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { UserRoles } from 'src/constants/enum';
 import {
   CreateProductVariantRequestDto,
-  UpdatePriceRequestDto,
-  UpdateQuantityRequestDto,
+  UpdateVariantRequestDto,
 } from './dto/request.dto';
 import { ProductVariantService } from './product-variant.service';
 
@@ -26,17 +25,12 @@ export class ProductVariantController {
     );
   }
 
-  @Post('/update-price')
+  @Put()
   @Roles(UserRoles.ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
-  updatePrice(@Body() updatePriceRequestDto: UpdatePriceRequestDto) {
-    return this.productVariantService.updatePrice(updatePriceRequestDto);
-  }
-
-  @Put('/update-quantity')
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
-  updateQuantity(@Body() updateQuantityRequestDto: UpdateQuantityRequestDto) {
-    return this.productVariantService.updateQuantity(updateQuantityRequestDto);
+  updateProductVariant(
+    @Body() updateVariantRequestDto: UpdateVariantRequestDto,
+  ) {
+    return this.productVariantService.updateVariant(updateVariantRequestDto);
   }
 }

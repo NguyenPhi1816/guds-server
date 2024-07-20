@@ -13,6 +13,8 @@ import {
   OptionValueResponseDto,
   OptionValuesResponseDto,
   ProductVariantResponseDto,
+  UpdateBaseProductDto,
+  UpdateBaseProductStatusRequestDto,
 } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import { BaseProductStatus } from 'src/constants/enum/base-product-status.enum';
@@ -134,6 +136,108 @@ export class ProductService {
       } else {
         throw error;
       }
+    }
+  }
+
+  async updateBaseProduct(
+    updateBaseProduct: UpdateBaseProductDto,
+  ): Promise<BasicBaseProductResponseDto> {
+    try {
+      // start transaction for multi query
+      const newBaseProduct = await this.prisma.$transaction(async (prisma) => {
+        // update base product
+        const baseProduct = await prisma.baseProduct.update({
+          where: {
+            id: updateBaseProduct.id,
+          },
+          data: {
+            name: updateBaseProduct.name,
+            slug: normalizeName(updateBaseProduct.name),
+            description: updateBaseProduct.description,
+            status: BaseProductStatus.ACTIVE,
+            brandId: updateBaseProduct.brandId,
+          },
+          include: {
+            brand: true,
+          },
+        });
+
+        // update product category
+        await prisma.baseProductCategory.deleteMany({
+          where: {
+            baseProductId: updateBaseProduct.id,
+          },
+        });
+        const baseProductCategoryPromises = updateBaseProduct.categoryIds.map(
+          (categoryId) =>
+            prisma.baseProductCategory.create({
+              data: { baseProductId: baseProduct.id, categoryId: categoryId },
+              include: {
+                category: true,
+              },
+            }),
+        );
+        const baseProductCategories = await Promise.all(
+          baseProductCategoryPromises,
+        );
+
+        // update base product images
+        await prisma.baseProductImage.deleteMany({
+          where: {
+            baseProductId: updateBaseProduct.id,
+          },
+        });
+        const imagePromises = updateBaseProduct.images.map((path, index) =>
+          prisma.baseProductImage.create({
+            data: {
+              baseProductId: baseProduct.id,
+              path: path,
+              isDefault: index === 0,
+            },
+          }),
+        );
+        const baseProductImages: BaseProductImagesResponseDto[] =
+          await Promise.all(imagePromises);
+
+        const response: BasicBaseProductResponseDto = {
+          id: baseProduct.id,
+          slug: baseProduct.slug,
+          name: baseProduct.name,
+          status: baseProduct.status,
+          categories: baseProductCategories.map(
+            (baseProductCategory) => baseProductCategory.category.name,
+          ),
+          brand: baseProduct.brand.name,
+        };
+        return response;
+      });
+      return newBaseProduct;
+    } catch (error) {
+      console.log(error.code);
+
+      if (error.code === 'P2002') {
+        throw new ConflictException('Product name must be unique');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async updateBaseProductStatus(
+    updateBaseProductStatusRequestDto: UpdateBaseProductStatusRequestDto,
+  ) {
+    try {
+      const baseProduct = await this.prisma.baseProduct.update({
+        where: {
+          id: updateBaseProductStatusRequestDto.id,
+        },
+        data: {
+          status: updateBaseProductStatusRequestDto.status,
+        },
+      });
+      return baseProduct;
+    } catch (error) {
+      throw error;
     }
   }
 

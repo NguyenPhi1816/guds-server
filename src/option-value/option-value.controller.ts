@@ -66,17 +66,6 @@ export class OptionValueController {
     return this.optionValueService.updateOptionName(updateOptionNameRequestDto);
   }
 
-  @Put('update-option-status')
-  @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRoles.ADMIN)
-  updateOptionStatus(
-    @Body() updateOptionStatusRequestDto: UpdateOptionStatusRequestDto,
-  ) {
-    return this.optionValueService.updateOptionStatus(
-      updateOptionStatusRequestDto,
-    );
-  }
-
   @Put('update-value-name')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRoles.ADMIN)
