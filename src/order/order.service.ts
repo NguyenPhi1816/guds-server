@@ -80,15 +80,7 @@ export class OrderService {
               include: {
                 productVariant: {
                   select: {
-                    prices: {
-                      orderBy: {
-                        updatedAt: 'desc',
-                      },
-                      take: 1,
-                      select: {
-                        price: true,
-                      },
-                    },
+                    price: true,
                   },
                 },
               },
@@ -108,7 +100,7 @@ export class OrderService {
         // create payment
         const totalPrice = orderDetails.reduce(
           (prev, detail) =>
-            prev + detail.productVariant.prices[0].price * detail.quantity,
+            prev + detail.productVariant.price * detail.quantity,
           0,
         );
         const payment = await prisma.payment.create({
@@ -146,20 +138,126 @@ export class OrderService {
       if (_order.status !== OrderStatus.PENDING) {
         throw new ConflictException('Unable to update order.');
       }
-      const response = this.prisma.$transaction(async (prisma) => {
+      const result = await this.prisma.$transaction(async (prisma) => {
         switch (status) {
+          case OrderStatus.SHIPPING: {
+            const order = await this.prisma.order.update({
+              where: {
+                id: orderId,
+              },
+              data: {
+                status: OrderStatus.SHIPPING,
+              },
+              select: {
+                id: true,
+                receiverName: true,
+                receiverPhoneNumber: true,
+                receiverAddress: true,
+                note: true,
+                createAt: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                orderDetails: {
+                  select: {
+                    id: true,
+                    quantity: true,
+                    productVariant: {
+                      select: {
+                        image: true,
+                        baseProduct: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                        optionValueVariants: {
+                          select: {
+                            optionValue: {
+                              select: {
+                                value: true,
+                              },
+                            },
+                          },
+                        },
+                        price: true,
+                      },
+                    },
+                  },
+                },
+                payment: {
+                  select: {
+                    paymentMethod: true,
+                    paymentDate: true,
+                    totalPrice: true,
+                    status: true,
+                    transactionId: true,
+                  },
+                },
+              },
+            });
+            return order;
+          }
           case OrderStatus.SUCCESS: {
             const order = await prisma.order.update({
               where: { id: orderId },
               data: { status: OrderStatus.SUCCESS },
-              include: {
+              select: {
+                id: true,
+                receiverName: true,
+                receiverPhoneNumber: true,
+                receiverAddress: true,
+                note: true,
+                createAt: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                orderDetails: {
+                  select: {
+                    id: true,
+                    productVariantId: true,
+                    quantity: true,
+                    productVariant: {
+                      select: {
+                        image: true,
+                        baseProduct: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                        optionValueVariants: {
+                          select: {
+                            optionValue: {
+                              select: {
+                                value: true,
+                              },
+                            },
+                          },
+                        },
+                        price: true,
+                      },
+                    },
+                  },
+                },
                 payment: {
                   select: {
                     id: true,
                     paymentMethod: true,
+                    paymentDate: true,
+                    totalPrice: true,
+                    status: true,
+                    transactionId: true,
                   },
                 },
-                orderDetails: true,
               },
             });
             if (order.payment.paymentMethod === PaymentMethod.CASH) {
@@ -169,6 +267,13 @@ export class OrderService {
                   status: PaymentStatus.SUCCESS,
                   paymentDate: new Date(),
                   transactionId: null,
+                },
+                select: {
+                  paymentMethod: true,
+                  paymentDate: true,
+                  totalPrice: true,
+                  status: true,
+                  transactionId: true,
                 },
               });
               delete order.payment;
@@ -181,14 +286,54 @@ export class OrderService {
             const order = await prisma.order.update({
               where: { id: orderId },
               data: { status: OrderStatus.CANCEL },
-              include: {
+              select: {
+                id: true,
+                receiverName: true,
+                receiverPhoneNumber: true,
+                receiverAddress: true,
+                note: true,
+                createAt: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                orderDetails: {
+                  select: {
+                    id: true,
+                    productVariantId: true,
+                    quantity: true,
+                    productVariant: {
+                      select: {
+                        image: true,
+                        baseProduct: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                        optionValueVariants: {
+                          select: {
+                            optionValue: {
+                              select: {
+                                value: true,
+                              },
+                            },
+                          },
+                        },
+                        price: true,
+                      },
+                    },
+                  },
+                },
                 payment: {
                   select: {
                     id: true,
                     paymentMethod: true,
                   },
                 },
-                orderDetails: true,
               },
             });
 
@@ -221,13 +366,63 @@ export class OrderService {
                   paymentDate: new Date(),
                   transactionId: 'refunded-transaction-id',
                 },
+                select: {
+                  paymentMethod: true,
+                  paymentDate: true,
+                  totalPrice: true,
+                  status: true,
+                  transactionId: true,
+                },
               });
               delete order.payment;
               return { ...order, payment };
             }
           }
+          default: {
+            throw new ConflictException(
+              'Có lỗi xảy ra trong quá trình cập nhật trạng thái đơn hàng',
+            );
+          }
         }
       });
+
+      console.log(result);
+
+      const orderDetails: OrderDetailResponse[] = result.orderDetails.map(
+        (orderDetail) => {
+          return {
+            id: orderDetail.id,
+            productName: orderDetail.productVariant.baseProduct.name,
+            productImage: orderDetail.productVariant.image,
+            optionValue: orderDetail.productVariant.optionValueVariants.map(
+              (optionValueVariant) => optionValueVariant.optionValue.value,
+            ),
+            quantity: orderDetail.quantity,
+            price: orderDetail.productVariant.price,
+          };
+        },
+      );
+
+      const payment: PaymentResponse = {
+        ...result.payment,
+        paymentDate: result.payment.paymentDate
+          ? result.payment.paymentDate.toISOString()
+          : null,
+      };
+
+      const response: OrderResponse = {
+        id: result.id,
+        userId: result.user.id,
+        userName: result.user.firstName + ' ' + result.user.lastName,
+        receiverName: result.receiverName,
+        receiverPhoneNumber: result.receiverPhoneNumber,
+        receiverAddress: result.receiverAddress,
+        note: result.note,
+        createAt: result.createAt.toISOString(),
+        status: result.status,
+        orderDetails: orderDetails,
+        payment: payment,
+      };
       return response;
     } catch (error) {
       throw error;
@@ -276,15 +471,7 @@ export class OrderService {
                       },
                     },
                   },
-                  prices: {
-                    orderBy: {
-                      updatedAt: 'desc',
-                    },
-                    take: 1,
-                    select: {
-                      price: true,
-                    },
-                  },
+                  price: true,
                 },
               },
             },
@@ -311,7 +498,7 @@ export class OrderService {
               (optionValueVariant) => optionValueVariant.optionValue.value,
             ),
             quantity: orderDetail.quantity,
-            price: orderDetail.productVariant.prices[0].price,
+            price: orderDetail.productVariant.price,
           };
         },
       );
@@ -336,8 +523,6 @@ export class OrderService {
         orderDetails: orderDetails,
         payment: payment,
       };
-      console.log('hello');
-
       return response;
     } catch (error) {
       throw error;

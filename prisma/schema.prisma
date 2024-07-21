@@ -43,7 +43,6 @@ model User {
   email       String   @unique
 
   account Account?
-  reviews Review[]
   orders  Order[]
   carts   Cart[]
 }
@@ -100,7 +99,6 @@ model OptionValue {
   id       Int    @id @default(autoincrement())
   value    String
   optionId Int
-  status   String
 
   option              Option               @relation(fields: [optionId], references: [id])
   optionValueVariants OptionValueVariant[]
@@ -123,22 +121,12 @@ model ProductVariant {
   quantity      Int
   image         String
   baseProductId Int
+  price Float
 
   optionValueVariants OptionValueVariant[]
-  prices              Price[]
   baseProduct         BaseProduct          @relation(fields: [baseProductId], references: [id])
   orderDetails        OrderDetail[]
   carts               Cart[]
-}
-
-model Price {
-  price            Float
-  updatedAt        DateTime
-  productVariantId Int
-
-  ProductVariant ProductVariant @relation(fields: [productVariantId], references: [id])
-
-  @@id([productVariantId, price, updatedAt])
 }
 
 model Order {
@@ -185,10 +173,8 @@ model Review {
   rating        Int
   createdAt     DateTime @default(now())
   updateAt      DateTime?
-  userId        Int
   orderDetailId Int      @unique
 
-  user        User?        @relation(fields: [userId], references: [id])
   orderDetail OrderDetail? @relation(fields: [orderDetailId], references: [id])
 }
 

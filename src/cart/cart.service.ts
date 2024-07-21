@@ -29,15 +29,7 @@ export class CartService {
                   name: true,
                 },
               },
-              prices: {
-                orderBy: {
-                  updatedAt: 'desc',
-                },
-                take: 1,
-                select: {
-                  price: true,
-                },
-              },
+              price: true,
               image: true,
               optionValueVariants: {
                 select: {
@@ -58,7 +50,7 @@ export class CartService {
         productVariantId: cart.productVariant.id,
         name: cart.productVariant.baseProduct.name,
         image: cart.productVariant.image,
-        price: cart.productVariant.prices[0].price,
+        price: cart.productVariant.price,
         optionValues: cart.productVariant.optionValueVariants.map(
           (item) => item.optionValue.value,
         ),

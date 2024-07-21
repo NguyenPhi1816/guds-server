@@ -25,9 +25,20 @@ export class ReviewService {
         },
       },
       include: {
-        user: true,
         orderDetail: {
           select: {
+            order: {
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    image: true,
+                  },
+                },
+              },
+            },
             productVariant: {
               select: {
                 optionValueVariants: {
@@ -47,11 +58,12 @@ export class ReviewService {
     });
 
     const myReviews: ReviewResponseDto[] = reviews.map((review) => {
+      const user = review.orderDetail.order.user;
       const reviewUser: UserReviewResponseDto = {
-        id: review.user.id,
-        firstName: review.user.firstName,
-        lastName: review.user.lastName,
-        image: review.user.image,
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        image: user.image,
       };
       const values = review.orderDetail.productVariant.optionValueVariants.map(
         (optionValueVariant) => optionValueVariant.optionValue.value,
@@ -73,10 +85,7 @@ export class ReviewService {
     );
   }
 
-  async createReview(
-    userId: number,
-    createReviewRequestDto: CreateReviewRequestDto,
-  ) {
+  async createReview(createReviewRequestDto: CreateReviewRequestDto) {
     try {
       const order = await this.prisma.order.findUnique({
         where: { id: createReviewRequestDto.orderId },
@@ -106,7 +115,6 @@ export class ReviewService {
               comment: createReviewRequestDto.comment,
               createdAt: new Date(),
               orderDetailId: orderDetailId,
-              userId: userId,
               updateAt: null,
             },
           });

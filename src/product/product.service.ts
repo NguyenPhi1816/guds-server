@@ -336,15 +336,7 @@ export class ProductService {
                   optionValueId: true,
                 },
               },
-              prices: {
-                orderBy: {
-                  updatedAt: 'desc',
-                },
-                take: 1,
-                select: {
-                  price: true,
-                },
-              },
+              price: true,
             },
           },
         },
@@ -379,7 +371,7 @@ export class ProductService {
             image: variant.image,
             quantity: variant.quantity,
             optionValue: optionValue,
-            price: variant.prices[0].price,
+            price: variant.price,
           };
         });
 
@@ -485,15 +477,7 @@ export class ProductService {
             select: {
               id: true,
               image: true,
-              prices: {
-                orderBy: {
-                  updatedAt: 'desc',
-                },
-                take: 1,
-                select: {
-                  price: true,
-                },
-              },
+              price: true,
             },
           },
         },
@@ -518,7 +502,7 @@ export class ProductService {
             id: baseProduct.id,
             image: productVariant.image,
             name: baseProduct.name,
-            price: productVariant.prices[0].price,
+            price: productVariant.price,
             slug: baseProduct.slug,
             variantId: productVariant.id,
             averageRating: averageRating,
@@ -549,15 +533,7 @@ export class ProductService {
           select: {
             id: true,
             image: true,
-            prices: {
-              orderBy: {
-                updatedAt: 'desc',
-              },
-              take: 1,
-              select: {
-                price: true,
-              },
-            },
+            price: true,
           },
         },
       },
@@ -581,7 +557,7 @@ export class ProductService {
           id: baseProduct.id,
           image: productVariant.image,
           name: baseProduct.name,
-          price: productVariant.prices[0].price,
+          price: productVariant.price,
           slug: baseProduct.slug,
           variantId: productVariant.id,
           averageRating: averageRating,

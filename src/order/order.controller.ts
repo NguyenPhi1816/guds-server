@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/decorator';
@@ -59,7 +60,7 @@ export class OrderController {
     return this.orderService.createOrder(userId, createOrderDto);
   }
 
-  @Patch('/:orderId/:status')
+  @Put('/:orderId/:status')
   @Roles(UserRoles.ADMIN)
   @UseGuards(JwtGuard, RolesGuard)
   updateOrder(@Param() params: UpdateOrderParams) {

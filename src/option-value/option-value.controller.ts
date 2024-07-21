@@ -17,7 +17,6 @@ import {
   CreateOptionValuesRequestDto,
   GetOptionValuesByBaseProductSlugParams,
   UpdateOptionNameRequestDto,
-  UpdateOptionStatusRequestDto,
   UpdateValueNameRequestDto,
   UpdateValueStatusRequestDto,
 } from './dto';
@@ -73,16 +72,5 @@ export class OptionValueController {
     @Body() updateValueNameRequestDto: UpdateValueNameRequestDto,
   ) {
     return this.optionValueService.updateValueName(updateValueNameRequestDto);
-  }
-
-  @Put('update-value-status')
-  @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRoles.ADMIN)
-  updateValueStatus(
-    @Body() updateValueStatusRequestDto: UpdateValueStatusRequestDto,
-  ) {
-    return this.optionValueService.updateValueStatus(
-      updateValueStatusRequestDto,
-    );
   }
 }

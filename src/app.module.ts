@@ -17,6 +17,7 @@ import { ReviewModule } from './review/review.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: ['.env.local', '.env'],
       isGlobal: true,
     }),
     AuthModule,

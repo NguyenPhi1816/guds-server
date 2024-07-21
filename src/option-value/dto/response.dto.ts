@@ -16,10 +16,6 @@ export class ValueResponseDto {
   @IsString()
   @IsNotEmpty()
   valueName: string;
-
-  @IsString()
-  @IsNotEmpty()
-  valueStatus: string;
 }
 
 export class OptionValuesResponseDto {

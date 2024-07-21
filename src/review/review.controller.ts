@@ -31,11 +31,8 @@ export class ReviewController {
 
   @Post()
   @UseGuards(JwtGuard)
-  createFeedback(
-    @GetUser('id') userId: number,
-    @Body() createReviewRequestDto: CreateReviewRequestDto,
-  ) {
-    return this.reviewService.createReview(userId, createReviewRequestDto);
+  createReview(@Body() createReviewRequestDto: CreateReviewRequestDto) {
+    return this.reviewService.createReview(createReviewRequestDto);
   }
 
   @Put()

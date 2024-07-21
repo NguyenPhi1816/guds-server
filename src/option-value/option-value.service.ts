@@ -10,13 +10,10 @@ import {
   OptionValuesDto,
   OptionValuesResponseDto,
   UpdateOptionNameRequestDto,
-  UpdateOptionStatusRequestDto,
   UpdateValueNameRequestDto,
-  UpdateValueStatusRequestDto,
   ValueResponseDto,
 } from './dto';
 import { OptionValue } from '@prisma/client';
-import { optionValueStatus } from 'src/constants/enum/option-value-status.enum';
 
 @Injectable()
 export class OptionValueService {
@@ -55,7 +52,6 @@ export class OptionValueService {
               data: {
                 optionId: savedOption.id,
                 value: value,
-                status: optionValueStatus.ACTIVE,
               },
             });
             createOptionValuesQueries.push(createOptionValuesQuery);
@@ -74,7 +70,6 @@ export class OptionValueService {
                 values.push({
                   valueId: savedOptionValue.id,
                   valueName: savedOptionValue.value,
-                  valueStatus: savedOptionValue.status,
                 });
               }
             });
@@ -116,7 +111,6 @@ export class OptionValueService {
                 data: {
                   optionId: option.id,
                   value: value,
-                  status: optionValueStatus.ACTIVE,
                 },
               }),
             );
@@ -126,7 +120,6 @@ export class OptionValueService {
             (optionValue) => ({
               valueId: optionValue.id,
               valueName: optionValue.value,
-              valueStatus: optionValue.status,
             }),
           );
 
@@ -170,7 +163,6 @@ export class OptionValueService {
           (optionValue) => ({
             valueId: optionValue.id,
             valueName: optionValue.value,
-            valueStatus: optionValue.status,
           }),
         );
 
@@ -208,22 +200,6 @@ export class OptionValueService {
         where: { id: updateValueNameRequestDto.valueId },
         data: {
           value: updateValueNameRequestDto.name,
-        },
-      });
-      return optionValue;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async updateValueStatus(
-    updateValueStatusRequestDto: UpdateValueStatusRequestDto,
-  ) {
-    try {
-      const optionValue = await this.prisma.optionValue.update({
-        where: { id: updateValueStatusRequestDto.valueId },
-        data: {
-          status: updateValueStatusRequestDto.status,
         },
       });
       return optionValue;

@@ -21,21 +21,12 @@ export class ProductVariantService {
             baseProductId: createProductVariantRequestDto.baseProductId,
             image: createProductVariantRequestDto.image,
             quantity: createProductVariantRequestDto.quantity,
+            price: createProductVariantRequestDto.price,
           },
           select: {
             id: true,
             image: true,
             quantity: true,
-          },
-        });
-
-        const price = await prisma.price.create({
-          data: {
-            price: createProductVariantRequestDto.price,
-            updatedAt: new Date(),
-            productVariantId: productVariant.id,
-          },
-          select: {
             price: true,
           },
         });
@@ -76,7 +67,6 @@ export class ProductVariantService {
         const response: ProductVariantResponseDto = {
           ...productVariant,
           optionValue,
-          price: price.price,
         };
 
         return response;
@@ -102,15 +92,7 @@ export class ProductVariantService {
             id: true,
             image: true,
             quantity: true,
-            prices: {
-              orderBy: {
-                updatedAt: 'desc',
-              },
-              take: 1,
-              select: {
-                price: true,
-              },
-            },
+            price: true,
             optionValueVariants: {
               select: {
                 optionValue: {
@@ -128,13 +110,14 @@ export class ProductVariantService {
           },
         });
 
-        let price = { price: productVariant.prices[0].price };
+        let price = { price: productVariant.price };
         if (price.price !== updateVariantRequestDto.price) {
-          price = await prisma.price.create({
+          price = await prisma.productVariant.update({
+            where: {
+              id: updateVariantRequestDto.productVariantId,
+            },
             data: {
               price: updateVariantRequestDto.price,
-              updatedAt: new Date(),
-              productVariantId: updateVariantRequestDto.productVariantId,
             },
             select: {
               price: true,
