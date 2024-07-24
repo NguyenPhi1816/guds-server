@@ -23,6 +23,11 @@ export class CategoryController {
     return this.categoryService.getAllCategories();
   }
 
+  @Get('/client')
+  getClientAllCategories() {
+    return this.categoryService.getClientAllCategories();
+  }
+
   @Get('/children/:slug')
   getCategoryChildren(@Param() params: SlugParams) {
     return this.categoryService.getCategoryChildren(params.slug);

@@ -109,7 +109,7 @@ export class CartService {
 
       // check if inventory quantity is greater than request quantity
       if (productVariant.quantity >= addToCartDto.quantity) {
-        const newCart = await this.prisma.cart.create({
+        await this.prisma.cart.create({
           data: {
             userId: userId,
             productVariantId: addToCartDto.productVariantId,
@@ -117,7 +117,8 @@ export class CartService {
             create_at: new Date(),
           },
         });
-        return newCart;
+        const response = await this.getCartByUserId(userId);
+        return response;
       } else {
         throw new ConflictException('Số lượng hàng tồn kho không đủ');
       }

@@ -238,8 +238,7 @@ ALTER SEQUENCE public."Category_id_seq" OWNED BY public."Category".id;
 CREATE TABLE public."Option" (
     id integer NOT NULL,
     name text NOT NULL,
-    "baseProductId" integer NOT NULL,
-    status text NOT NULL
+    "baseProductId" integer NOT NULL
 );
 
 
@@ -252,8 +251,7 @@ ALTER TABLE public."Option" OWNER TO postgres;
 CREATE TABLE public."OptionValue" (
     id integer NOT NULL,
     value text NOT NULL,
-    "optionId" integer NOT NULL,
-    status text NOT NULL
+    "optionId" integer NOT NULL
 );
 
 
@@ -431,19 +429,6 @@ ALTER SEQUENCE public."Payment_id_seq" OWNED BY public."Payment".id;
 
 
 --
--- Name: Price; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public."Price" (
-    price double precision NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    "productVariantId" integer NOT NULL
-);
-
-
-ALTER TABLE public."Price" OWNER TO postgres;
-
---
 -- Name: ProductVariant; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -451,7 +436,8 @@ CREATE TABLE public."ProductVariant" (
     id integer NOT NULL,
     quantity integer NOT NULL,
     image text NOT NULL,
-    "baseProductId" integer NOT NULL
+    "baseProductId" integer NOT NULL,
+    price double precision NOT NULL
 );
 
 
@@ -489,7 +475,6 @@ CREATE TABLE public."Review" (
     rating integer NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updateAt" timestamp(3) without time zone,
-    "userId" integer NOT NULL,
     "orderDetailId" integer NOT NULL
 );
 
@@ -814,14 +799,6 @@ ALTER TABLE ONLY public."Payment"
 
 
 --
--- Name: Price Price_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Price"
-    ADD CONSTRAINT "Price_pkey" PRIMARY KEY ("productVariantId", price, "updatedAt");
-
-
---
 -- Name: ProductVariant ProductVariant_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1089,14 +1066,6 @@ ALTER TABLE ONLY public."Payment"
 
 
 --
--- Name: Price Price_productVariantId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Price"
-    ADD CONSTRAINT "Price_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES public."ProductVariant"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
-
-
---
 -- Name: ProductVariant ProductVariant_baseProductId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1110,14 +1079,6 @@ ALTER TABLE ONLY public."ProductVariant"
 
 ALTER TABLE ONLY public."Review"
     ADD CONSTRAINT "Review_orderDetailId_fkey" FOREIGN KEY ("orderDetailId") REFERENCES public."OrderDetail"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
-
-
---
--- Name: Review Review_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Review"
-    ADD CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --

@@ -1,23 +1,22 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AddCategoryDto, UpdateCategoryDto } from './dto';
 import { normalizeName } from 'src/utils/normalize-name.util';
 import {
   AllCategoryResponse,
   CategoryProductResponse,
-  CategoryResponse,
-  CategoryResponseDto,
-  ProductVariantResponseDto,
+  ClientAllCategoryResponse,
+  ClientCategoryProductResponse,
 } from './dto/response.dto';
+import { OrderStatus } from 'src/constants/enum';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class CategoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private productService: ProductService,
+  ) {}
 
   async getAllCategories(): Promise<AllCategoryResponse[]> {
     const categories = await this.prisma.category.findMany({
@@ -54,6 +53,47 @@ export class CategoryService {
         numberOfChildren: category._count.children,
       };
     });
+    return response;
+  }
+
+  async getClientAllCategories(): Promise<ClientAllCategoryResponse[]> {
+    const categories = await this.prisma.category.findMany({
+      where: {
+        parent: null,
+      },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        image: true,
+        children: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+    });
+    const productPromises = categories.map((category) => {
+      return this.productService.getProductsByCategorySlug(category.slug);
+    });
+
+    const productResults = await Promise.all(productPromises);
+
+    const response: ClientAllCategoryResponse[] = categories.map(
+      (category, index) => {
+        return {
+          id: category.id,
+          slug: category.slug,
+          name: category.name,
+          image: category.image,
+          children: category.children,
+          products: productResults[index],
+        };
+      },
+    );
     return response;
   }
 

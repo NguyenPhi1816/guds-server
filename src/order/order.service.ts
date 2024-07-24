@@ -135,7 +135,10 @@ export class OrderService {
         select: { status: true },
       });
 
-      if (_order.status !== OrderStatus.PENDING) {
+      if (
+        _order.status !== OrderStatus.PENDING &&
+        _order.status !== OrderStatus.SHIPPING
+      ) {
         throw new ConflictException('Unable to update order.');
       }
       const result = await this.prisma.$transaction(async (prisma) => {

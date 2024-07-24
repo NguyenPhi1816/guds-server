@@ -279,7 +279,7 @@ export class ProductService {
           orderDetailsQuery,
         ]);
 
-      const averageRating = Math.round(averageRatingResult._avg.rating);
+      const averageRating = averageRatingResult._avg.rating;
 
       const numberOfPurchases = orderDetails.reduce(
         (prev, orderDetail) => prev + orderDetail.quantity,
@@ -347,12 +347,22 @@ export class ProductService {
       }
 
       // get relate products by getting products from base product category, limit is 5 items
-      const relatedProducts = await this.getProductsByCategorySlug(
+      const productsByCategorySlug = await this.getProductsByCategorySlug(
         product.baseProductCategories[0].category.slug,
-        5,
+        6,
       );
 
-      console.log(product);
+      let relatedProducts = [...productsByCategorySlug];
+      const isProductContained = productsByCategorySlug
+        .map((p) => p.id)
+        .includes(product.id);
+      if (isProductContained) {
+        relatedProducts = relatedProducts.filter(
+          (item) => item.id !== product.id,
+        );
+      } else {
+        relatedProducts = relatedProducts.slice(0, 5);
+      }
 
       // get product variants from base product
       const productVariants: BaseProductVariantDto[] =
