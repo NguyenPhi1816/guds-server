@@ -3,7 +3,11 @@ import { OrderStatus, PaymentMethod, PaymentStatus } from 'src/constants/enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto';
 import {
+  CreateOrderResponseDto,
+  OrderDetailDto,
   OrderDetailResponse,
+  OrderDto,
+  OrderPaymentDto,
   OrderResponse,
   PaymentResponse,
 } from './dto/response';
@@ -30,7 +34,10 @@ export class OrderService {
     }
   }
 
-  async createOrder(userId: number, createOrderDto: CreateOrderDto) {
+  async createOrder(
+    userId: number,
+    createOrderDto: CreateOrderDto,
+  ): Promise<CreateOrderResponseDto> {
     try {
       const productVariantQueries = createOrderDto.orderDetails.map(
         (orderDetail) =>
@@ -54,7 +61,7 @@ export class OrderService {
         throw new ConflictException('Số lượng sản phẩm không đủ');
       }
 
-      const response = await this.prisma.$transaction(async (prisma) => {
+      const result = await this.prisma.$transaction(async (prisma) => {
         // save order
         const order = await prisma.order.create({
           data: {
@@ -107,20 +114,50 @@ export class OrderService {
           data: {
             totalPrice: totalPrice,
             paymentMethod: createOrderDto.paymentMethod,
-            status:
-              createOrderDto.paymentMethod === PaymentMethod.CASH
-                ? PaymentStatus.PENDING
-                : PaymentStatus.SUCCESS,
+            status: PaymentStatus.PENDING,
             orderId: order.id,
-            paymentDate: createOrderDto.paymentDate
-              ? new Date(createOrderDto.paymentDate)
-              : null,
-            transactionId: createOrderDto.transactionId,
+            paymentDate: null,
+            transactionId: null,
           },
         });
 
         return { order, orderDetails, payment };
       });
+
+      const order: OrderDto = {
+        id: result.order.id,
+        userId: result.order.userId,
+        receiverName: result.order.receiverName,
+        receiverPhoneNumber: result.order.receiverPhoneNumber,
+        receiverAddress: result.order.receiverAddress,
+        note: result.order.note,
+        createAt: result.order.createAt.toISOString(),
+        status: result.order.status as OrderStatus,
+      };
+
+      const orderDetails: OrderDetailDto[] = result.orderDetails.map(
+        (item) => ({
+          id: item.id,
+          price: item.productVariant.price,
+          productVariantId: item.productVariantId,
+          quantity: item.quantity,
+        }),
+      );
+
+      const payment: OrderPaymentDto = {
+        id: result.payment.id,
+        paymentMethod: result.payment.paymentMethod as PaymentMethod,
+        paymentDate: null,
+        totalPrice: result.payment.totalPrice,
+        status: result.payment.status as PaymentStatus,
+        transactionId: null,
+      };
+
+      const response: CreateOrderResponseDto = {
+        order,
+        orderDetails,
+        payment,
+      };
 
       return response;
     } catch (error) {
@@ -527,6 +564,20 @@ export class OrderService {
         payment: payment,
       };
       return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateVNpayPayment(orderId: number, transactionId: string) {
+    try {
+      await this.prisma.payment.update({
+        where: { orderId: orderId },
+        data: {
+          paymentDate: new Date(),
+          transactionId: transactionId,
+        },
+      });
     } catch (error) {
       throw error;
     }

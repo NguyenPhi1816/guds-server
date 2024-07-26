@@ -13,6 +13,7 @@ import { ProductVariantModule } from './product-variant/product-variant.module';
 import { OptionValueModule } from './option-value/option-value.module';
 import { ImageModule } from './image/image.module';
 import { ReviewModule } from './review/review.module';
+import { VnpayModule } from './vnpay/vnpay.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ReviewModule } from './review/review.module';
     OptionValueModule,
     ImageModule,
     ReviewModule,
+    VnpayModule,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,38 @@
 import { OrderStatus, PaymentMethod, PaymentStatus } from 'src/constants/enum';
 
+export type OrderDto = {
+  id: number;
+  userId: number;
+  receiverName: string;
+  receiverPhoneNumber: string;
+  receiverAddress: string;
+  note: string;
+  createAt: string;
+  status: OrderStatus;
+};
+
+export type OrderDetailDto = {
+  id: number;
+  productVariantId: number;
+  quantity: number;
+  price: number;
+};
+
+export type OrderPaymentDto = {
+  id: number;
+  paymentMethod: PaymentMethod;
+  paymentDate: string | null;
+  totalPrice: number;
+  status: PaymentStatus;
+  transactionId: string | null;
+};
+
+export type CreateOrderResponseDto = {
+  order: OrderDto;
+  orderDetails: OrderDetailDto[];
+  payment: OrderPaymentDto;
+};
+
 export class OrderDetailResponse {
   id: number;
   productName: string;

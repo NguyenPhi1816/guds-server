@@ -88,7 +88,7 @@ export class CartService {
           productVariant.quantity >=
           existedCart.quantity + addToCartDto.quantity
         ) {
-          const cart = await this.prisma.cart.update({
+          await this.prisma.cart.update({
             where: {
               cartId: {
                 userId: existedCart.userId,
@@ -101,7 +101,8 @@ export class CartService {
               },
             },
           });
-          return cart;
+          const response = await this.getCartByUserId(userId);
+          return response;
         } else {
           throw new ConflictException('Số lượng hàng tồn kho không đủ');
         }
@@ -174,7 +175,7 @@ export class CartService {
         }
       }
 
-      const cart = await this.prisma.cart.update({
+      await this.prisma.cart.update({
         where: {
           cartId: {
             userId: userId,
@@ -188,7 +189,8 @@ export class CartService {
               : { decrement: updateCartQuantityRequestDto.quantity },
         },
       });
-      return cart;
+      const response = await this.getCartByUserId(userId);
+      return response;
     } catch (error) {
       throw error;
     }
@@ -196,12 +198,13 @@ export class CartService {
 
   async deleteCart(userId: number, productVariantId: number) {
     try {
-      const res = await this.prisma.cart.delete({
+      await this.prisma.cart.delete({
         where: {
           cartId: { userId: userId, productVariantId: productVariantId },
         },
       });
-      return res;
+      const response = await this.getCartByUserId(userId);
+      return response;
     } catch (error) {
       throw error;
     }
