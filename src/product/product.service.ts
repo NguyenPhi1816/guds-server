@@ -579,4 +579,62 @@ export class ProductService {
 
     return response;
   }
+
+  async searchProductByName(name: string, limit: number = 20) {
+    const baseProducts = await this.prisma.baseProduct.findMany({
+      where:
+        name !== '_'
+          ? {
+              name: {
+                contains: name,
+                mode: 'insensitive',
+              },
+            }
+          : {},
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        productVariants: {
+          take: 1,
+          select: {
+            id: true,
+            image: true,
+            price: true,
+          },
+        },
+      },
+    });
+    // get the summary of each product (number of reviews, average rating, number of purchases)
+    const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
+      this.getSummary(baseProduct.slug),
+    );
+    const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
+
+    // prepare response
+    const response: ProductVariantResponseDto[] = [];
+
+    baseProducts.map((baseProduct, index) => {
+      const [numberOfReviews, averageRating, numberOfPurchases] =
+        baseProductSummaries[index];
+      const productVariant = baseProduct.productVariants[0];
+
+      if (productVariant) {
+        response.push({
+          id: baseProduct.id,
+          image: productVariant.image,
+          name: baseProduct.name,
+          price: productVariant.price,
+          slug: baseProduct.slug,
+          variantId: productVariant.id,
+          averageRating: averageRating,
+          numberOfReviews: numberOfReviews,
+          numberOfPurchases: numberOfPurchases,
+        });
+      }
+    });
+
+    return response;
+  }
 }

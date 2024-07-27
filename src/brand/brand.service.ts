@@ -6,10 +6,14 @@ import {
   BasicBrandResponseDto,
   BrandProductResponse,
 } from './dto/response.dto';
+import { ProductService } from 'src/product/product.service';
 
 @Injectable()
 export class BrandService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private productService: ProductService,
+  ) {}
 
   async getAllBrands() {
     const brands = await this.prisma.brand.findMany({
@@ -88,15 +92,9 @@ export class BrandService {
   async getBrandBySlug(slug: string) {
     const brand = await this.prisma.brand.findUnique({
       where: { slug: slug },
-      include: {
-        baseProducts: {
-          include: {
-            productVariants: true,
-          },
-        },
-      },
     });
-    return brand;
+    const products = await this.productService.getProductsByBrandSlug(slug);
+    return { ...brand, products };
   }
 
   async getBrandById(prisma: any, id: number): Promise<BasicBrandResponseDto> {

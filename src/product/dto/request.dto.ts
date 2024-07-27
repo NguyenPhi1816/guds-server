@@ -118,3 +118,8 @@ export class SlugParam {
   @IsNotEmpty()
   slug: string;
 }
+
+export class NameParam {
+  @IsString()
+  name: string;
+}

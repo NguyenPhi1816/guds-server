@@ -14,6 +14,7 @@ import { JwtGuard } from 'src/auth/guard';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
 import {
   CreateBaseProductDto,
+  NameParam,
   SlugParam,
   UpdateBaseProductDto,
   UpdateBaseProductStatusRequestDto,
@@ -41,6 +42,11 @@ export class ProductController {
   @Get('/brand/:slug')
   getBaseProductsByBrandSlug(@Param() param: SlugParam) {
     return this.productService.getProductsByBrandSlug(param.slug);
+  }
+
+  @Get('/search/:name')
+  searchProductByName(@Param() param: NameParam) {
+    return this.productService.searchProductByName(param.name);
   }
 
   @Post()

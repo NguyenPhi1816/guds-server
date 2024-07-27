@@ -10,6 +10,7 @@ import {
   OrderPaymentDto,
   OrderResponse,
   PaymentResponse,
+  ReviewResponse,
 } from './dto/response';
 
 @Injectable()
@@ -25,10 +26,18 @@ export class OrderService {
     }
   }
 
-  async getOrdersByUserId(userId: number) {
+  async getOrdersByUserId(userId: number): Promise<OrderResponse[]> {
     try {
-      const orders = this.prisma.order.findMany({ where: { userId: userId } });
-      return orders;
+      const orders = await this.prisma.order.findMany({
+        where: { userId: userId },
+        select: {
+          id: true,
+        },
+      });
+
+      const promises = orders.map((order) => this.getOrderDetailById(order.id));
+      const response = await Promise.all(promises);
+      return response;
     } catch (error) {
       throw error;
     }
@@ -207,6 +216,15 @@ export class OrderService {
                   select: {
                     id: true,
                     quantity: true,
+                    review: {
+                      select: {
+                        id: true,
+                        comment: true,
+                        rating: true,
+                        createdAt: true,
+                        updateAt: true,
+                      },
+                    },
                     productVariant: {
                       select: {
                         image: true,
@@ -266,6 +284,15 @@ export class OrderService {
                     id: true,
                     productVariantId: true,
                     quantity: true,
+                    review: {
+                      select: {
+                        id: true,
+                        comment: true,
+                        rating: true,
+                        createdAt: true,
+                        updateAt: true,
+                      },
+                    },
                     productVariant: {
                       select: {
                         image: true,
@@ -346,6 +373,15 @@ export class OrderService {
                     id: true,
                     productVariantId: true,
                     quantity: true,
+                    review: {
+                      select: {
+                        id: true,
+                        comment: true,
+                        rating: true,
+                        createdAt: true,
+                        updateAt: true,
+                      },
+                    },
                     productVariant: {
                       select: {
                         image: true,
@@ -426,10 +462,20 @@ export class OrderService {
         }
       });
 
-      console.log(result);
-
       const orderDetails: OrderDetailResponse[] = result.orderDetails.map(
         (orderDetail) => {
+          const review: ReviewResponse = orderDetail.review
+            ? {
+                id: orderDetail.review.id,
+                comment: orderDetail.review.comment,
+                rating: orderDetail.review.rating,
+                createdAt: orderDetail.review.createdAt.toISOString(),
+                updateAt: orderDetail.review.updateAt
+                  ? orderDetail.review.updateAt.toISOString()
+                  : null,
+              }
+            : null;
+
           return {
             id: orderDetail.id,
             productName: orderDetail.productVariant.baseProduct.name,
@@ -439,6 +485,7 @@ export class OrderService {
             ),
             quantity: orderDetail.quantity,
             price: orderDetail.productVariant.price,
+            review: review,
           };
         },
       );
@@ -494,6 +541,15 @@ export class OrderService {
             select: {
               id: true,
               quantity: true,
+              review: {
+                select: {
+                  id: true,
+                  comment: true,
+                  rating: true,
+                  createdAt: true,
+                  updateAt: true,
+                },
+              },
               productVariant: {
                 select: {
                   image: true,
@@ -530,6 +586,17 @@ export class OrderService {
 
       const orderDetails: OrderDetailResponse[] = order.orderDetails.map(
         (orderDetail) => {
+          const review: ReviewResponse = orderDetail.review
+            ? {
+                id: orderDetail.review.id,
+                comment: orderDetail.review.comment,
+                rating: orderDetail.review.rating,
+                createdAt: orderDetail.review.createdAt.toISOString(),
+                updateAt: orderDetail.review.updateAt
+                  ? orderDetail.review.updateAt.toISOString()
+                  : null,
+              }
+            : null;
           return {
             id: orderDetail.id,
             productName: orderDetail.productVariant.baseProduct.name,
@@ -539,6 +606,7 @@ export class OrderService {
             ),
             quantity: orderDetail.quantity,
             price: orderDetail.productVariant.price,
+            review: review,
           };
         },
       );

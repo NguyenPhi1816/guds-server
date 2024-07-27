@@ -4,6 +4,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumberString,
+  IsOptional,
   IsString,
   Max,
   Min,
@@ -22,8 +23,9 @@ export class CreateReviewRequestDto {
   @IsNotEmpty()
   rating: number;
 
+  @IsOptional()
   @IsString()
-  comment: string;
+  comment: string | null;
 }
 
 export class EditReviewRequestDto {
@@ -37,8 +39,9 @@ export class EditReviewRequestDto {
   @IsNotEmpty()
   rating: number;
 
+  @IsOptional()
   @IsString()
-  comment: string;
+  comment: string | null;
 }
 
 export class DeteleReviewParams {

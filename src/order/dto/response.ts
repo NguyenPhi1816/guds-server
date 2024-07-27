@@ -33,6 +33,14 @@ export type CreateOrderResponseDto = {
   payment: OrderPaymentDto;
 };
 
+export class ReviewResponse {
+  id: number;
+  comment: string;
+  rating: number;
+  createdAt: string;
+  updateAt: string | null;
+}
+
 export class OrderDetailResponse {
   id: number;
   productName: string;
@@ -40,6 +48,7 @@ export class OrderDetailResponse {
   optionValue: string[];
   quantity: number;
   price: number;
+  review: ReviewResponse | null;
 }
 
 export class PaymentResponse {

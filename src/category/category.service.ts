@@ -282,20 +282,19 @@ export class CategoryService {
     try {
       const category = await this.prisma.category.findUnique({
         where: { slug: slug },
-        include: {
-          baseProductCategories: {
-            take: limit,
-            select: {
-              baseProduct: {
-                include: {
-                  productVariants: true,
-                },
-              },
-            },
-          },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          image: true,
+          description: true,
         },
       });
-      return category;
+      const products = await this.productService.getProductsByCategorySlug(
+        slug,
+        limit,
+      );
+      return { ...category, products };
     } catch (error) {
       throw error;
     }
