@@ -75,15 +75,11 @@ export class AuthService {
         },
       });
 
-      return this.signTokens(
-        account.id,
-        account.userPhoneNumber,
-        account.roleId,
-      );
+      return { status: 201, message: 'Đăng ký tài khoản thành công' };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ConflictException('Phone number or email already exists.');
+          throw new ConflictException('Số điện thoại hoặc email đã tồn tại');
         }
       } else {
         throw error;
