@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -10,6 +11,7 @@ import { AccountStatus, UserRoles } from 'src/constants/enum';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UpdatePasswordDto } from './dto/password.dto';
 
 @Injectable()
 export class AuthService {
@@ -143,5 +145,44 @@ export class AuthService {
       secret: accessSecret,
     });
     return { access_token: accessToken };
+  }
+
+  async updatePassword(userId: number, requestBody: UpdatePasswordDto) {
+    console.log(userId);
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          account: true,
+        },
+      });
+
+      // check old password
+      const isOldPasswordMatched = await argon.verify(
+        user.account.password,
+        requestBody.oldPassword,
+      );
+
+      if (!isOldPasswordMatched) {
+        throw new BadRequestException('Old password do not match.');
+      }
+
+      // generate the hashed password
+      const hashedPassword = await argon.hash(requestBody.newPassword);
+
+      await this.prisma.account.update({
+        where: {
+          id: user.account.id,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      return { status: 200, message: 'Update password successful.' };
+    } catch (error) {
+      throw error;
+    }
   }
 }

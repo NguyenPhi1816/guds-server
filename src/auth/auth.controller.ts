@@ -4,12 +4,14 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDTO, SignUpDto } from './dto';
-import { RefreshTokenGuard } from './guard';
+import { JwtGuard, RefreshTokenGuard } from './guard';
 import { GetUser } from './decorator';
+import { UpdatePasswordDto } from './dto/password.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -31,5 +33,15 @@ export class AuthController {
   @Post('refresh-token')
   refreshToken(@GetUser('phoneNumber') phoneNumber: string) {
     return this.authService.refreshToken(phoneNumber);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Put('update-password')
+  @UseGuards(JwtGuard)
+  updatePassword(
+    @GetUser('id') userId: number,
+    @Body() requestBody: UpdatePasswordDto,
+  ) {
+    return this.authService.updatePassword(userId, requestBody);
   }
 }

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserResponseDto } from './dto/response';
-import { UpdateUserStatusRequestDto } from './dto/request';
+import {
+  UpdateUserInforRequestDto,
+  UpdateUserStatusRequestDto,
+} from './dto/request';
 
 @Injectable()
 export class UserService {
@@ -76,6 +79,74 @@ export class UserService {
         status,
       };
       return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async UpdateUserInfo(userId: number, request: UpdateUserInforRequestDto) {
+    try {
+      const result = this.prisma.$transaction(async (prisma) => {
+        const user = await prisma.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            firstName: request.firstName,
+            lastName: request.lastName,
+            phoneNumber: request.phoneNumber,
+            email: request.email,
+            dateOfBirth: new Date(request.dateOfBirth).toISOString(),
+            address: request.address,
+            gender: request.gender,
+            image: request.image,
+          },
+          include: {
+            account: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        });
+        if (user.phoneNumber !== request.phoneNumber) {
+          throw new Error('Update user information failed.');
+        }
+
+        const account = await prisma.account.update({
+          where: {
+            id: user.account.id,
+          },
+          data: {
+            userPhoneNumber: request.phoneNumber,
+          },
+          select: {
+            status: true,
+            userRole: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        const response: UserResponseDto = {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          address: user.address,
+          dateOfBirth: new Date(user.dateOfBirth),
+          email: user.email,
+          gender: user.gender,
+          image: user.image,
+          phoneNumber: user.phoneNumber,
+          role: account.userRole.name,
+          status: account.status,
+        };
+
+        return response;
+      });
+      return result;
     } catch (error) {
       throw error;
     }

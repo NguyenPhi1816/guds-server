@@ -6,7 +6,10 @@ import { UserService } from './user.service';
 import { Roles } from 'src/auth/decorator/roles.decorator';
 import { UserRoles } from 'src/constants/enum';
 import { RolesGuard } from 'src/auth/guard/roles.guard';
-import { UpdateUserStatusRequestDto } from './dto/request';
+import {
+  UpdateUserInforRequestDto,
+  UpdateUserStatusRequestDto,
+} from './dto/request';
 
 @UseGuards(JwtGuard)
 @Controller('api/users')
@@ -23,6 +26,15 @@ export class UserController {
   @Get('profile')
   getProfile(@GetUser() user: User) {
     return user;
+  }
+
+  @Put()
+  @UseGuards(JwtGuard)
+  updateUserInfo(
+    @GetUser('id') userId: number,
+    @Body() requestBody: UpdateUserInforRequestDto,
+  ) {
+    return this.userService.UpdateUserInfo(userId, requestBody);
   }
 
   @Put('/status')
