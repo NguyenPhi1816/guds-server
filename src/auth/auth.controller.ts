@@ -11,7 +11,10 @@ import { AuthService } from './auth.service';
 import { AuthDTO, SignUpDto } from './dto';
 import { JwtGuard, RefreshTokenGuard } from './guard';
 import { GetUser } from './decorator';
-import { UpdatePasswordDto } from './dto/password.dto';
+import {
+  UpdatePasswordByPhoneNumberDto,
+  UpdatePasswordDto,
+} from './dto/password.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -43,5 +46,13 @@ export class AuthController {
     @Body() requestBody: UpdatePasswordDto,
   ) {
     return this.authService.updatePassword(userId, requestBody);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Put('update-password-by-phone')
+  updatePasswordByPhoneNumber(
+    @Body() requestBody: UpdatePasswordByPhoneNumberDto,
+  ) {
+    return this.authService.updatePasswordByPhoneNumber(requestBody);
   }
 }

@@ -9,3 +9,13 @@ export class UpdatePasswordDto {
   @IsNotEmpty()
   newPassword: string;
 }
+
+export class UpdatePasswordByPhoneNumberDto {
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}

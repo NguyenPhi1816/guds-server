@@ -14,6 +14,8 @@ import { OptionValueModule } from './option-value/option-value.module';
 import { ImageModule } from './image/image.module';
 import { ReviewModule } from './review/review.module';
 import { VnpayModule } from './vnpay/vnpay.module';
+import { EmailModule } from './email/email.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { VnpayModule } from './vnpay/vnpay.module';
     ImageModule,
     ReviewModule,
     VnpayModule,
+    EmailModule,
+    OtpModule,
   ],
 })
 export class AppModule {}

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -11,7 +12,10 @@ import { AccountStatus, UserRoles } from 'src/constants/enum';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UpdatePasswordDto } from './dto/password.dto';
+import {
+  UpdatePasswordByPhoneNumberDto,
+  UpdatePasswordDto,
+} from './dto/password.dto';
 
 @Injectable()
 export class AuthService {
@@ -166,6 +170,39 @@ export class AuthService {
 
       if (!isOldPasswordMatched) {
         throw new BadRequestException('Old password do not match.');
+      }
+
+      // generate the hashed password
+      const hashedPassword = await argon.hash(requestBody.newPassword);
+
+      await this.prisma.account.update({
+        where: {
+          id: user.account.id,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      return { status: 200, message: 'Update password successful.' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updatePasswordByPhoneNumber(
+    requestBody: UpdatePasswordByPhoneNumberDto,
+  ) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { phoneNumber: requestBody.phoneNumber },
+        select: {
+          account: true,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
       }
 
       // generate the hashed password
