@@ -500,7 +500,7 @@ export class ProductService {
       const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
 
       // prepare response
-      const response: ProductVariantResponseDto[] = [];
+      let response: ProductVariantResponseDto[] = [];
 
       baseProducts.map((baseProduct, index) => {
         const [numberOfReviews, averageRating, numberOfPurchases] =
@@ -521,6 +521,10 @@ export class ProductService {
           });
         }
       });
+
+      response = response.sort(
+        (a, b) => b.numberOfPurchases - a.numberOfPurchases,
+      );
 
       return response;
     } catch (error) {
@@ -555,7 +559,7 @@ export class ProductService {
     const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
 
     // prepare response
-    const response: ProductVariantResponseDto[] = [];
+    let response: ProductVariantResponseDto[] = [];
 
     baseProducts.map((baseProduct, index) => {
       const [numberOfReviews, averageRating, numberOfPurchases] =
@@ -576,6 +580,10 @@ export class ProductService {
         });
       }
     });
+
+    response = response.sort(
+      (a, b) => b.numberOfPurchases - a.numberOfPurchases,
+    );
 
     return response;
   }
@@ -613,7 +621,7 @@ export class ProductService {
     const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
 
     // prepare response
-    const response: ProductVariantResponseDto[] = [];
+    let response: ProductVariantResponseDto[] = [];
 
     baseProducts.map((baseProduct, index) => {
       const [numberOfReviews, averageRating, numberOfPurchases] =
@@ -634,6 +642,10 @@ export class ProductService {
         });
       }
     });
+
+    response = response.sort(
+      (a, b) => b.numberOfPurchases - a.numberOfPurchases,
+    );
 
     return response;
   }
