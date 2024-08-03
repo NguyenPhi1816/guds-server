@@ -469,6 +469,7 @@ export class ProductService {
     try {
       const baseProducts = await this.prisma.baseProduct.findMany({
         where: {
+          status: BaseProductStatus.ACTIVE,
           baseProductCategories: {
             some: {
               category: {
@@ -535,6 +536,7 @@ export class ProductService {
   async getProductsByBrandSlug(slug: string, limit: number = 20) {
     const baseProducts = await this.prisma.baseProduct.findMany({
       where: {
+        status: BaseProductStatus.ACTIVE,
         brand: { slug: slug },
       },
       take: limit,
@@ -593,12 +595,13 @@ export class ProductService {
       where:
         name !== '_'
           ? {
+              status: BaseProductStatus.ACTIVE,
               name: {
                 contains: name,
                 mode: 'insensitive',
               },
             }
-          : {},
+          : { status: BaseProductStatus.ACTIVE },
       take: limit,
       select: {
         id: true,

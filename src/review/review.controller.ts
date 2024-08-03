@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
@@ -23,10 +24,11 @@ export class ReviewController {
   constructor(private reviewService: ReviewService) {}
 
   @Get('/:slug')
-  getFeedbackByBaseProductSlug(
+  getReviewByBaseProductSlug(
     @Param() params: GetFeedbackByBaseProductSlugParams,
+    @Query('rating') rating?: number,
   ) {
-    return this.reviewService.getReviewsByProductSlug(params.slug);
+    return this.reviewService.getReviewsByProductSlug(params.slug, rating);
   }
 
   @Post()

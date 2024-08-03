@@ -13,17 +13,23 @@ import { OrderStatus } from 'src/constants/enum';
 export class ReviewService {
   constructor(private prisma: PrismaService) {}
 
-  async getReviewsByProductSlug(slug: string) {
-    const reviews = await this.prisma.review.findMany({
-      where: {
-        orderDetail: {
-          productVariant: {
-            baseProduct: {
-              slug: slug,
-            },
+  async getReviewsByProductSlug(slug: string, rating?: number) {
+    const reviewFilter: any = {
+      orderDetail: {
+        productVariant: {
+          baseProduct: {
+            slug: slug,
           },
         },
       },
+    };
+
+    if (!Number.isNaN(rating)) {
+      reviewFilter.rating = rating;
+    }
+
+    const reviews = await this.prisma.review.findMany({
+      where: reviewFilter,
       include: {
         orderDetail: {
           select: {

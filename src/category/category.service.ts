@@ -288,6 +288,7 @@ export class CategoryService {
           name: true,
           image: true,
           description: true,
+          parent: true,
         },
       });
       const products = await this.productService.getProductsByCategorySlug(

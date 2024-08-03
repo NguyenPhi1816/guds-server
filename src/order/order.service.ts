@@ -1,5 +1,10 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { OrderStatus, PaymentMethod, PaymentStatus } from 'src/constants/enum';
+import {
+  BaseProductStatus,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from 'src/constants/enum';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto';
 import {
@@ -19,8 +24,12 @@ export class OrderService {
 
   async getAllOrders() {
     try {
-      const orders = this.prisma.order.findMany();
-      return orders;
+      const orders = await this.prisma.order.findMany();
+      const response = orders.sort(
+        (a, b) =>
+          new Date(b.createAt).getTime() - new Date(a.createAt).getTime(),
+      );
+      return response;
     } catch (error) {
       throw error;
     }
@@ -36,7 +45,11 @@ export class OrderService {
       });
 
       const promises = orders.map((order) => this.getOrderDetailById(order.id));
-      const response = await Promise.all(promises);
+      let response = await Promise.all(promises);
+      response = response.sort(
+        (a, b) =>
+          new Date(b.createAt).getTime() - new Date(a.createAt).getTime(),
+      );
       return response;
     } catch (error) {
       throw error;
@@ -51,13 +64,32 @@ export class OrderService {
       const productVariantQueries = createOrderDto.orderDetails.map(
         (orderDetail) =>
           this.prisma.productVariant.findUnique({
-            where: { id: orderDetail.productVariantId },
+            where: {
+              id: orderDetail.productVariantId,
+            },
+            include: {
+              baseProduct: {
+                select: {
+                  status: true,
+                },
+              },
+            },
           }),
       );
 
       const productVariants = await Promise.all(productVariantQueries);
 
-      const isValid = createOrderDto.orderDetails.reduce(
+      let isValid = productVariants.reduce(
+        (prev, variant) =>
+          prev && variant.baseProduct.status === BaseProductStatus.ACTIVE,
+        true,
+      );
+
+      if (!isValid) {
+        throw new ConflictException('Sản phẩm đã ngừng bán');
+      }
+
+      isValid = createOrderDto.orderDetails.reduce(
         (prev, orderDetail, index) => {
           return (
             prev && productVariants[index].quantity >= orderDetail.quantity
@@ -642,6 +674,7 @@ export class OrderService {
       await this.prisma.payment.update({
         where: { orderId: orderId },
         data: {
+          status: PaymentStatus.SUCCESS,
           paymentDate: new Date(),
           transactionId: transactionId,
         },

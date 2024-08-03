@@ -61,8 +61,7 @@ export class OrderController {
   }
 
   @Put('/:orderId/:status')
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtGuard)
   updateOrder(@Param() params: UpdateOrderParams) {
     return this.orderService.updateOrder(params.orderId, params.status);
   }
