@@ -15,7 +15,7 @@ export class UserReviewResponseDto {
   image: string;
 }
 
-export class ReviewResponseDto {
+export class ReviewDto {
   @IsInt()
   id: number;
 
@@ -33,4 +33,9 @@ export class ReviewResponseDto {
 
   @IsString()
   createdAt: string;
+}
+
+export class ReviewResponseDto {
+  numberOfReviews: number;
+  reviews: ReviewDto[];
 }

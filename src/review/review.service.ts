@@ -4,6 +4,7 @@ import {
   CreateReviewRequestDto,
   DeteleReviewParams,
   EditReviewRequestDto,
+  ReviewDto,
   ReviewResponseDto,
   UserReviewResponseDto,
 } from './dto';
@@ -13,7 +14,12 @@ import { OrderStatus } from 'src/constants/enum';
 export class ReviewService {
   constructor(private prisma: PrismaService) {}
 
-  async getReviewsByProductSlug(slug: string, rating?: number) {
+  async getReviewsByProductSlug(
+    slug: string,
+    rating?: number,
+    page: number = 1,
+    limit: number = 5,
+  ) {
     const reviewFilter: any = {
       orderDetail: {
         productVariant: {
@@ -27,6 +33,11 @@ export class ReviewService {
     if (!Number.isNaN(rating)) {
       reviewFilter.rating = rating;
     }
+
+    // Count the total number of reviews matching the filter
+    const numberOfReviews = await this.prisma.review.count({
+      where: reviewFilter,
+    });
 
     const reviews = await this.prisma.review.findMany({
       where: reviewFilter,
@@ -61,9 +72,11 @@ export class ReviewService {
           },
         },
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    const myReviews: ReviewResponseDto[] = reviews.map((review) => {
+    const myReviews: ReviewDto[] = reviews.map((review) => {
       const user = review.orderDetail.order.user;
       const reviewUser: UserReviewResponseDto = {
         id: user.id,
@@ -74,7 +87,7 @@ export class ReviewService {
       const values = review.orderDetail.productVariant.optionValueVariants.map(
         (optionValueVariant) => optionValueVariant.optionValue.value,
       );
-      const response: ReviewResponseDto = {
+      const result: ReviewDto = {
         id: review.id,
         comment: review.comment,
         createdAt: review.createdAt.toLocaleDateString(),
@@ -82,13 +95,18 @@ export class ReviewService {
         rating: review.rating,
         variant: values.join(', '),
       };
-      return response;
+      return result;
     });
 
-    return myReviews.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    const response: ReviewResponseDto = {
+      numberOfReviews: numberOfReviews,
+      reviews: myReviews.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    };
+
+    return response;
   }
 
   async createReview(createReviewRequestDto: CreateReviewRequestDto) {

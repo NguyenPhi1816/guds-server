@@ -243,48 +243,57 @@ export class ProductService {
 
   async getSummary(baseProductSlug: string) {
     try {
+      // Define the common where clause to be used in all queries
+      const whereClause = {
+        orderDetail: {
+          productVariant: {
+            baseProduct: {
+              slug: baseProductSlug,
+            },
+          },
+        },
+      };
+
+      // Define queries
       const numberOfReviewsQuery = this.prisma.review.count({
-        where: {
-          orderDetail: {
-            productVariant: { baseProduct: { slug: baseProductSlug } },
-          },
-        },
+        where: whereClause,
       });
+
       const averageRatingQuery = this.prisma.review.aggregate({
-        where: {
-          orderDetail: {
-            productVariant: { baseProduct: { slug: baseProductSlug } },
-          },
-        },
+        where: whereClause,
         _avg: {
           rating: true,
         },
       });
-      const orderDetailsQuery = this.prisma.orderDetail.findMany({
+
+      const numberOfPurchasesQuery = this.prisma.orderDetail.aggregate({
         where: {
-          productVariant: { baseProduct: { slug: baseProductSlug } },
+          productVariant: {
+            baseProduct: {
+              slug: baseProductSlug,
+            },
+          },
           order: {
             status: OrderStatus.SUCCESS,
           },
         },
-        select: {
+        _sum: {
           quantity: true,
         },
       });
 
-      const [numberOfReviews, averageRatingResult, orderDetails] =
+      // Execute queries in parallel
+      const [numberOfReviews, averageRatingResult, numberOfPurchasesResult] =
         await Promise.all([
           numberOfReviewsQuery,
           averageRatingQuery,
-          orderDetailsQuery,
+          numberOfPurchasesQuery,
         ]);
 
+      // Extract results
       const averageRating = averageRatingResult._avg.rating;
+      const numberOfPurchases = numberOfPurchasesResult._sum.quantity ?? 0;
 
-      const numberOfPurchases = orderDetails.reduce(
-        (prev, orderDetail) => prev + orderDetail.quantity,
-        0,
-      );
       return [numberOfReviews, averageRating, numberOfPurchases];
     } catch (error) {
       throw error;
@@ -352,6 +361,7 @@ export class ProductService {
         6,
       );
 
+      // remove this product from related product
       let relatedProducts = [...productsByCategorySlug];
       const isProductContained = productsByCategorySlug
         .map((p) => p.id)
@@ -385,6 +395,7 @@ export class ProductService {
           };
         });
 
+      // get option values
       const optionValues: OptionValuesResponseDto[] = [];
 
       product.productVariants.map((variant) =>
@@ -462,54 +473,47 @@ export class ProductService {
     }
   }
 
-  async getProductsByCategorySlug(
-    slug: string,
-    limit: number = 20,
+  async getBaseProducts(
+    whereClause: any,
+    limit: number,
+    page: number,
+    sortBy: string,
   ): Promise<ProductVariantResponseDto[]> {
-    try {
-      const baseProducts = await this.prisma.baseProduct.findMany({
-        where: {
-          status: BaseProductStatus.ACTIVE,
-          baseProductCategories: {
-            some: {
-              category: {
-                slug: slug,
-              },
-            },
+    const baseProducts = await this.prisma.baseProduct.findMany({
+      where: {
+        status: BaseProductStatus.ACTIVE,
+        ...whereClause,
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        productVariants: {
+          take: 1,
+          select: {
+            id: true,
+            image: true,
+            price: true,
           },
         },
-        take: limit,
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          productVariants: {
-            take: 1,
-            select: {
-              id: true,
-              image: true,
-              price: true,
-            },
-          },
-        },
-      });
+      },
+    });
 
-      // get the summary of each product (number of reviews, average rating, number of purchases)
-      const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
-        this.getSummary(baseProduct.slug),
-      );
-      const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
+    const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
+      this.getSummary(baseProduct.slug),
+    );
+    const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
 
-      // prepare response
-      let response: ProductVariantResponseDto[] = [];
-
-      baseProducts.map((baseProduct, index) => {
+    const response: ProductVariantResponseDto[] = baseProducts
+      .map((baseProduct, index) => {
         const [numberOfReviews, averageRating, numberOfPurchases] =
           baseProductSummaries[index];
         const productVariant = baseProduct.productVariants[0];
 
         if (productVariant) {
-          response.push({
+          return {
             id: baseProduct.id,
             image: productVariant.image,
             name: baseProduct.name,
@@ -519,137 +523,84 @@ export class ProductService {
             averageRating: averageRating,
             numberOfReviews: numberOfReviews,
             numberOfPurchases: numberOfPurchases,
-          });
+          };
         }
-      });
+      })
+      .filter(Boolean) as ProductVariantResponseDto[];
 
-      response = response.sort(
-        (a, b) => b.numberOfPurchases - a.numberOfPurchases,
-      );
-
-      return response;
-    } catch (error) {
-      throw error;
+    // Sort the response based on sortBy criteria
+    switch (sortBy) {
+      case 'priceAsc':
+        response.sort((a, b) => a.price - b.price);
+        break;
+      case 'priceDesc':
+        response.sort((a, b) => b.price - a.price);
+        break;
+      case 'bestSelling':
+        response.sort((a, b) => b.numberOfPurchases - a.numberOfPurchases);
+        break;
+      default:
+        response.sort((a, b) => b.numberOfPurchases - a.numberOfPurchases);
+        break;
     }
-  }
-
-  async getProductsByBrandSlug(slug: string, limit: number = 20) {
-    const baseProducts = await this.prisma.baseProduct.findMany({
-      where: {
-        status: BaseProductStatus.ACTIVE,
-        brand: { slug: slug },
-      },
-      take: limit,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        productVariants: {
-          take: 1,
-          select: {
-            id: true,
-            image: true,
-            price: true,
-          },
-        },
-      },
-    });
-    // get the summary of each product (number of reviews, average rating, number of purchases)
-    const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
-      this.getSummary(baseProduct.slug),
-    );
-    const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
-
-    // prepare response
-    let response: ProductVariantResponseDto[] = [];
-
-    baseProducts.map((baseProduct, index) => {
-      const [numberOfReviews, averageRating, numberOfPurchases] =
-        baseProductSummaries[index];
-      const productVariant = baseProduct.productVariants[0];
-
-      if (productVariant) {
-        response.push({
-          id: baseProduct.id,
-          image: productVariant.image,
-          name: baseProduct.name,
-          price: productVariant.price,
-          slug: baseProduct.slug,
-          variantId: productVariant.id,
-          averageRating: averageRating,
-          numberOfReviews: numberOfReviews,
-          numberOfPurchases: numberOfPurchases,
-        });
-      }
-    });
-
-    response = response.sort(
-      (a, b) => b.numberOfPurchases - a.numberOfPurchases,
-    );
 
     return response;
   }
 
-  async searchProductByName(name: string, limit: number = 20) {
-    const baseProducts = await this.prisma.baseProduct.findMany({
-      where:
-        name !== '_'
-          ? {
-              status: BaseProductStatus.ACTIVE,
-              name: {
-                contains: name,
-                mode: 'insensitive',
-              },
-            }
-          : { status: BaseProductStatus.ACTIVE },
-      take: limit,
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        productVariants: {
-          take: 1,
-          select: {
-            id: true,
-            image: true,
-            price: true,
+  async getProductsByCategorySlug(
+    slug: string,
+    limit: number = 20,
+  ): Promise<ProductVariantResponseDto[]> {
+    const whereClause = {
+      baseProductCategories: {
+        some: {
+          category: {
+            slug: slug,
           },
         },
       },
-    });
-    // get the summary of each product (number of reviews, average rating, number of purchases)
-    const baseProductSummaryQueries = baseProducts.map((baseProduct) =>
-      this.getSummary(baseProduct.slug),
-    );
-    const baseProductSummaries = await Promise.all(baseProductSummaryQueries);
+    };
+    return this.getBaseProducts(whereClause, limit, 1, 'bestSelling');
+  }
 
-    // prepare response
-    let response: ProductVariantResponseDto[] = [];
+  async getProductsByBrandSlug(
+    slug: string,
+    limit: number = 20,
+  ): Promise<ProductVariantResponseDto[]> {
+    const whereClause = {
+      brand: {
+        slug: slug,
+      },
+    };
+    return this.getBaseProducts(whereClause, limit, 1, 'bestSelling');
+  }
 
-    baseProducts.map((baseProduct, index) => {
-      const [numberOfReviews, averageRating, numberOfPurchases] =
-        baseProductSummaries[index];
-      const productVariant = baseProduct.productVariants[0];
+  async searchProductByName(
+    name: string,
+    fromPrice?: number,
+    toPrice?: number,
+    sortBy: string = 'bestSelling',
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<ProductVariantResponseDto[]> {
+    const whereClause: any = {
+      name: {
+        contains: name,
+        mode: 'insensitive',
+      },
+    };
 
-      if (productVariant) {
-        response.push({
-          id: baseProduct.id,
-          image: productVariant.image,
-          name: baseProduct.name,
-          price: productVariant.price,
-          slug: baseProduct.slug,
-          variantId: productVariant.id,
-          averageRating: averageRating,
-          numberOfReviews: numberOfReviews,
-          numberOfPurchases: numberOfPurchases,
-        });
-      }
-    });
+    if (!Number.isNaN(fromPrice) && !Number.isNaN(toPrice)) {
+      whereClause.productVariants = {
+        some: {
+          price: {
+            gte: fromPrice,
+            lte: toPrice,
+          },
+        },
+      };
+    }
 
-    response = response.sort(
-      (a, b) => b.numberOfPurchases - a.numberOfPurchases,
-    );
-
-    return response;
+    return this.getBaseProducts(whereClause, limit, page, sortBy);
   }
 }

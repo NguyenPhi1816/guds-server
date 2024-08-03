@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
@@ -45,8 +46,22 @@ export class ProductController {
   }
 
   @Get('/search/:name')
-  searchProductByName(@Param() param: NameParam) {
-    return this.productService.searchProductByName(param.name);
+  searchProductByName(
+    @Param() param: NameParam,
+    @Query('fromPrice') fromPrice?: number,
+    @Query('toPrice') toPrice?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.productService.searchProductByName(
+      param.name,
+      fromPrice,
+      toPrice,
+      sortBy,
+      page,
+      limit,
+    );
   }
 
   @Post()

@@ -27,8 +27,15 @@ export class ReviewController {
   getReviewByBaseProductSlug(
     @Param() params: GetFeedbackByBaseProductSlugParams,
     @Query('rating') rating?: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 5,
   ) {
-    return this.reviewService.getReviewsByProductSlug(params.slug, rating);
+    return this.reviewService.getReviewsByProductSlug(
+      params.slug,
+      rating,
+      page,
+      limit,
+    );
   }
 
   @Post()
