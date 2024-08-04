@@ -89,11 +89,25 @@ export class BrandService {
     return response;
   }
 
-  async getBrandBySlug(slug: string) {
+  async getBrandBySlug(
+    slug: string,
+    fromPrice?: number,
+    toPrice?: number,
+    sortBy: string = 'bestSelling',
+    page: number = 1,
+    limit: number = 20,
+  ) {
     const brand = await this.prisma.brand.findUnique({
       where: { slug: slug },
     });
-    const products = await this.productService.getProductsByBrandSlug(slug);
+    const products = await this.productService.getProductsByBrandSlug(
+      slug,
+      fromPrice,
+      toPrice,
+      sortBy,
+      page,
+      limit,
+    );
     return { ...brand, products };
   }
 

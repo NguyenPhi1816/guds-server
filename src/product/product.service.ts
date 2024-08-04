@@ -20,6 +20,7 @@ import { normalizeName } from 'src/utils/normalize-name.util';
 import { BaseProductStatus } from 'src/constants/enum/base-product-status.enum';
 import { OrderStatus } from 'src/constants/enum';
 import { UpdateQuantityType } from 'src/constants/enum/update-quantiy-type.enum';
+import { OrderBySearchParams } from 'src/constants/enum/orderBySearchParams';
 
 @Injectable()
 export class ProductService {
@@ -530,13 +531,13 @@ export class ProductService {
 
     // Sort the response based on sortBy criteria
     switch (sortBy) {
-      case 'priceAsc':
+      case OrderBySearchParams.PRICE_ASC:
         response.sort((a, b) => a.price - b.price);
         break;
-      case 'priceDesc':
+      case OrderBySearchParams.PRICE_DESC:
         response.sort((a, b) => b.price - a.price);
         break;
-      case 'bestSelling':
+      case OrderBySearchParams.BEST_SELLING:
         response.sort((a, b) => b.numberOfPurchases - a.numberOfPurchases);
         break;
       default:
@@ -549,6 +550,10 @@ export class ProductService {
 
   async getProductsByCategorySlug(
     slug: string,
+    fromPrice?: number,
+    toPrice?: number,
+    sortBy: string = 'bestSelling',
+    page: number = 1,
     limit: number = 20,
   ): Promise<ProductVariantResponseDto[]> {
     const whereClause = {
@@ -560,11 +565,27 @@ export class ProductService {
         },
       },
     };
-    return this.getBaseProducts(whereClause, limit, 1, 'bestSelling');
+
+    if (!Number.isNaN(fromPrice) && !Number.isNaN(toPrice)) {
+      whereClause['productVariants'] = {
+        some: {
+          price: {
+            gte: fromPrice,
+            lte: toPrice,
+          },
+        },
+      };
+    }
+
+    return this.getBaseProducts(whereClause, limit, page, sortBy);
   }
 
   async getProductsByBrandSlug(
     slug: string,
+    fromPrice?: number,
+    toPrice?: number,
+    sortBy: string = 'bestSelling',
+    page: number = 1,
     limit: number = 20,
   ): Promise<ProductVariantResponseDto[]> {
     const whereClause = {
@@ -572,14 +593,26 @@ export class ProductService {
         slug: slug,
       },
     };
-    return this.getBaseProducts(whereClause, limit, 1, 'bestSelling');
+
+    if (!Number.isNaN(fromPrice) && !Number.isNaN(toPrice)) {
+      whereClause['productVariants'] = {
+        some: {
+          price: {
+            gte: fromPrice,
+            lte: toPrice,
+          },
+        },
+      };
+    }
+
+    return this.getBaseProducts(whereClause, limit, page, sortBy);
   }
 
   async searchProductByName(
     name: string,
     fromPrice?: number,
     toPrice?: number,
-    sortBy: string = 'bestSelling',
+    sortBy: string = OrderBySearchParams.BEST_SELLING,
     page: number = 1,
     limit: number = 20,
   ): Promise<ProductVariantResponseDto[]> {

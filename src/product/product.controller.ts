@@ -36,13 +36,41 @@ export class ProductController {
   }
 
   @Get('/category/:slug')
-  getBaseProductsByCategorySlug(@Param() param: SlugParam) {
-    return this.productService.getProductsByCategorySlug(param.slug);
+  getBaseProductsByCategorySlug(
+    @Param() param: SlugParam,
+    @Query('fromPrice') fromPrice?: number,
+    @Query('toPrice') toPrice?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.productService.getProductsByCategorySlug(
+      param.slug,
+      fromPrice,
+      toPrice,
+      sortBy,
+      page,
+      limit,
+    );
   }
 
   @Get('/brand/:slug')
-  getBaseProductsByBrandSlug(@Param() param: SlugParam) {
-    return this.productService.getProductsByBrandSlug(param.slug);
+  getBaseProductsByBrandSlug(
+    @Param() param: SlugParam,
+    @Query('fromPrice') fromPrice?: number,
+    @Query('toPrice') toPrice?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.productService.getProductsByBrandSlug(
+      param.slug,
+      fromPrice,
+      toPrice,
+      sortBy,
+      page,
+      limit,
+    );
   }
 
   @Get('/search/:name')

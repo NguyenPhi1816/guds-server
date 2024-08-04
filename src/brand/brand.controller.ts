@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { BrandService } from './brand.service';
@@ -27,8 +28,22 @@ export class BrandController {
   }
 
   @Get('/:slug')
-  getBrandBySlug(@Param() params: GetBrandBySlugParams) {
-    return this.brandService.getBrandBySlug(params.slug);
+  getBrandBySlug(
+    @Param() params: GetBrandBySlugParams,
+    @Query('fromPrice') fromPrice?: number,
+    @Query('toPrice') toPrice?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.brandService.getBrandBySlug(
+      params.slug,
+      fromPrice,
+      toPrice,
+      sortBy,
+      page,
+      limit,
+    );
   }
 
   @Post()
