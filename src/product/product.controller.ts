@@ -76,11 +76,11 @@ export class ProductController {
   @Get('/search/:name')
   searchProductByName(
     @Param() param: NameParam,
-    @Query('fromPrice') fromPrice?: number,
-    @Query('toPrice') toPrice?: number,
-    @Query('sortBy') sortBy?: string,
+    @Query('sortBy') sortBy: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
+    @Query('fromPrice') fromPrice?: number,
+    @Query('toPrice') toPrice?: number,
   ) {
     return this.productService.searchProductByName(
       param.name,

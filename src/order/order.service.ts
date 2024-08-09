@@ -124,6 +124,7 @@ export class OrderService {
                 orderId: order.id,
                 productVariantId: orderDetail.productVariantId,
                 quantity: orderDetail.quantity,
+                price: orderDetail.price,
               },
               include: {
                 productVariant: {
@@ -582,6 +583,7 @@ export class OrderService {
                   updateAt: true,
                 },
               },
+              price: true,
               productVariant: {
                 select: {
                   image: true,
@@ -599,7 +601,6 @@ export class OrderService {
                       },
                     },
                   },
-                  price: true,
                 },
               },
             },
@@ -637,7 +638,7 @@ export class OrderService {
               (optionValueVariant) => optionValueVariant.optionValue.value,
             ),
             quantity: orderDetail.quantity,
-            price: orderDetail.productVariant.price,
+            price: orderDetail.price,
             review: review,
           };
         },

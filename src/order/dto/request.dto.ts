@@ -3,6 +3,7 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsString,
   Min,
   ValidateIf,
@@ -18,6 +19,10 @@ export class CreateOrderDetailDto {
   @IsNotEmpty()
   @Min(1)
   quantity: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  price: number;
 }
 
 export class CreateOrderDto {

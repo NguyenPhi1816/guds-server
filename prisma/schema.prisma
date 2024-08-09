@@ -149,6 +149,7 @@ model OrderDetail {
   orderId          Int
   productVariantId Int
   quantity         Int
+  price Float
 
   productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
   order          Order          @relation(fields: [orderId], references: [id])

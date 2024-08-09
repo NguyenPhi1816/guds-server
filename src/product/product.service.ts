@@ -292,7 +292,7 @@ export class ProductService {
         ]);
 
       // Extract results
-      const averageRating = averageRatingResult._avg.rating;
+      const averageRating = averageRatingResult._avg.rating ?? 0;
       const numberOfPurchases = numberOfPurchasesResult._sum.quantity ?? 0;
 
       return [numberOfReviews, averageRating, numberOfPurchases];
